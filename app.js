@@ -568,23 +568,74 @@ function renderBattleship(){
 }
 async function battleShot(i){
   if(!roomId||!room)return;
+
+  const clickedSide=sideOf(room);
+  if(!clickedSide||room.turn!==clickedSide||room.winner)return;
+
+  // Batalha Naval não usa temporizador de jogada.
+  // Contra jogador virtual, o tiro humano e a resposta do bot são processados
+  // dentro da MESMA transação. Assim a partida nunca fica presa esperando
+  // um setTimeout, listener ou mudança intermediária de turno.
   await runTransaction(ref(db,'rooms/'+roomId),r=>{
     if(!r||r.winner)return r;
+
     const s=sideOf(r);
     if(!s||r.turn!==s)return r;
 
     r.shots=r.shots||{blue:[],red:[]};
-    const shots=Array.isArray(r.shots[s])?[...r.shots[s]]:[];
+    r.shots.blue=Array.isArray(r.shots.blue)?r.shots.blue:[];
+    r.shots.red=Array.isArray(r.shots.red)?r.shots.red:[];
+
+    const shots=[...(r.shots[s]||[])];
     if(shots.includes(i))return r;
 
+    // 1. Registra sempre o tiro do jogador.
     shots.push(i);
     r.shots[s]=shots;
 
-    const o=otherSide(s);
-    const fleet=Array.isArray(r.ships?.[o])?r.ships[o]:[];
-    if(fleet.length&&fleet.every(x=>shots.includes(x)))awardWinner(r,s);
-    else r.turn=o;
+    const opponent=otherSide(s);
+    const opponentFleet=Array.isArray(r.ships?.[opponent])?r.ships[opponent]:[];
 
+    // Vitória do jogador: termina aqui.
+    if(opponentFleet.length && opponentFleet.every(x=>shots.includes(x))){
+      awardWinner(r,s);
+      r.updatedAt=Date.now();
+      return r;
+    }
+
+    const opponentPlayer=r.players?.[opponent];
+
+    // 2. Se o adversário for humano, apenas passa a vez normalmente.
+    if(opponentPlayer?.type!=='bot'){
+      r.turn=opponent;
+      r.updatedAt=Date.now();
+      return r;
+    }
+
+    // 3. Se for jogador virtual, ele responde imediatamente, sem qualquer timer.
+    const botSide=opponent;
+    const used=new Set(Array.isArray(r.shots[botSide])?r.shots[botSide]:[]);
+    const available=[];
+    for(let cell=0;cell<64;cell++){
+      if(!used.has(cell))available.push(cell);
+    }
+
+    if(available.length){
+      const botCell=available[Math.floor(Math.random()*available.length)];
+      const botShots=[...(r.shots[botSide]||[])];
+      botShots.push(botCell);
+      r.shots[botSide]=botShots;
+
+      const humanFleet=Array.isArray(r.ships?.[s])?r.ships[s]:[];
+      if(humanFleet.length && humanFleet.every(x=>botShots.includes(x))){
+        awardWinner(r,botSide);
+        r.updatedAt=Date.now();
+        return r;
+      }
+    }
+
+    // Sempre devolve a vez ao jogador humano.
+    r.turn=s;
     r.updatedAt=Date.now();
     return r;
   });
@@ -1058,6 +1109,8 @@ function renderPokerEnd(){
 /* BOT */
 let botBusy=false;
 async function maybeBotMove(){
+  // A Batalha Naval possui fluxo próprio e atômico: não usa timer do bot.
+  if(gameKey==='battleship')return;
   if(botBusy||!room||room.winner||gameKey==='poker')return;
   const red=room.players?.red;if(red?.type!=='bot'||room.turn!=='red')return;
   botBusy=true;
