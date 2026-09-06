@@ -361,6 +361,36 @@ async function enter(rid){
   enteringRoom=false;
 }
 
+async function maybeStartHumanRematch(r){
+  if(!roomId||!r?.winner)return;
+  const humans=Object.values(r.players||{}).filter(p=>p?.type==='human');
+  if(humans.length!==2)return;
+
+  const votes=r.rematch||{};
+  const ready=humans.every(p=>votes[p.uid]?.accepted===true&&votes[p.uid]?.sessionId===p.sessionId);
+  if(!ready)return;
+
+  // Ambos os aparelhos podem perceber a condição ao mesmo tempo.
+  // A transação garante que a partida seja reiniciada apenas uma vez.
+  await runTransaction(ref(db,'rooms/'+roomId),current=>{
+    if(!current?.winner)return current;
+    const currentHumans=Object.values(current.players||{}).filter(p=>p?.type==='human');
+    const currentVotes=current.rematch||{};
+    const allReady=currentHumans.length===2&&currentHumans.every(
+      p=>currentVotes[p.uid]?.accepted===true&&currentVotes[p.uid]?.sessionId===p.sessionId
+    );
+    if(!allReady)return current;
+
+    current.board=['','','','','','','','',''];
+    current.turn='X';
+    current.winner='';
+    current.rematch={};
+    current.updatedAt=Date.now();
+    // current.score é preservado.
+    return current;
+  });
+}
+
 function render(){
   const m=mine(room),o=opp(room),b=Array.isArray(room.board)?room.board:['','','','','','','','',''];
   const opponentMark=m==='X'?'O':'X';
@@ -381,16 +411,40 @@ function render(){
     const bt=document.createElement('button');
     bt.className='cell'+(v==='X'?' markX':v==='O'?' markO':'');
     bt.textContent=v;
+    if(v==='X')bt.style.color='#1565c0';
+    if(v==='O')bt.style.color='#d32f2f';
     bt.disabled=!!room.winner||room.turn!==m||!!v;
     bt.onclick=()=>move(i);el.appendChild(bt);
   });
 
   if(room.winner){
     const title=room.winner==='draw'?'Empate':room.winner===m?'Você venceu!':'Você perdeu!';
-    $('#status').textContent=title;$('#endTitle').textContent=title;
-    $('#endText').textContent=room.winner==='draw'?'A partida terminou empatada.':room.winner===m?'Boa partida.':'O adversário venceu esta rodada.';
-    $('#endModal').classList.remove('hidden');
-  }else $('#status').textContent=room.turn===m?'Sua vez':'Vez de '+(o?.nick||'adversário');
+    $('#endTitle').textContent=title;
+    $('#endText').textContent=room.winner==='draw'
+      ?'A partida terminou empatada.'
+      :room.winner===m?'Boa partida.':'O adversário venceu esta rodada.';
+
+    const humanGame=o?.type!=='bot';
+    const myVote=humanGame &&
+      room.rematch?.[uid]?.accepted===true &&
+      room.rematch?.[uid]?.sessionId===sessionId;
+
+    if(myVote){
+      // Depois de um único clique, o modal não reaparece.
+      $('#endModal').classList.add('hidden');
+      $('#status').textContent='Aguardando o adversário aceitar jogar de novo…';
+      $('#rematchBtn').disabled=true;
+      maybeStartHumanRematch(room);
+    }else{
+      $('#status').textContent=title;
+      $('#rematchBtn').disabled=false;
+      $('#endModal').classList.remove('hidden');
+    }
+  }else{
+    $('#endModal').classList.add('hidden');
+    $('#rematchBtn').disabled=false;
+    $('#status').textContent=room.turn===m?'Sua vez':'Vez de '+(o?.nick||'adversário');
+  }
 }
 
 async function move(i){
@@ -445,17 +499,33 @@ function botMove(){
 }
 
 async function rematch(){
-  $('#endModal').classList.add('hidden');
+  if(!roomId||!room?.winner)return;
+
   const o=opp(room);
-  // O placar NÃO é zerado: permanece enquanto forem os mesmos oponentes.
-  if(o?.type==='bot')return update(ref(db,'rooms/'+roomId),{board:['','','','','','','','',''],turn:'X',winner:'',rematch:{},updatedAt:Date.now()});
-  await set(ref(db,'rooms/'+roomId+'/rematch/'+uid),{sessionId,accepted:true});
-  $('#status').textContent='Pedido de revanche enviado…';
-  const s=await get(ref(db,'rooms/'+roomId+'/rematch')),v=s.val()||{};
-  const ids=Object.values(room.players).filter(p=>p.type==='human').map(p=>({uid:p.uid,sessionId:p.sessionId}));
-  if(ids.every(x=>v[x.uid]?.accepted===true&&v[x.uid]?.sessionId===x.sessionId)){
-    await update(ref(db,'rooms/'+roomId),{board:['','','','','','','','',''],turn:'X',winner:'',rematch:{},updatedAt:Date.now()});
+  $('#rematchBtn').disabled=true;
+  $('#endModal').classList.add('hidden');
+
+  // Contra jogador virtual, reinicia imediatamente e preserva o placar.
+  if(o?.type==='bot'){
+    await update(ref(db,'rooms/'+roomId),{
+      board:['','','','','','','','',''],
+      turn:'X',
+      winner:'',
+      rematch:{},
+      updatedAt:Date.now()
+    });
+    return;
   }
+
+  // Contra humano, UM clique registra a aceitação.
+  // Quando o outro jogador também clicar uma vez, o listener reinicia a partida automaticamente.
+  await set(ref(db,'rooms/'+roomId+'/rematch/'+uid),{
+    sessionId,
+    accepted:true,
+    acceptedAt:Date.now()
+  });
+
+  $('#status').textContent='Aguardando o adversário aceitar jogar de novo…';
 }
 
 async function back(){

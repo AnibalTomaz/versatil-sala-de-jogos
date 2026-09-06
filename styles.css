@@ -7,5 +7,11 @@
   font-weight:900;
   color:#17324a;
 }
-.cell.markX{color:#1565c0}
-.cell.markO{color:#d32f2f}
+.cell.markX{color:#1565c0!important}
+.cell.markO{color:#d32f2f!important}
+
+/* v0.12 — garante atualização visual também em desktop */
+.cell.markX,
+.cell.markX:disabled{color:#1565c0!important;opacity:1}
+.cell.markO,
+.cell.markO:disabled{color:#d32f2f!important;opacity:1}
