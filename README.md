@@ -1,39 +1,29 @@
-# PROTÓTIPO SALA DE JOGOS VERSÁTIL v0.6 — FILA/SESSÃO CORRIGIDA
+# PROTÓTIPO SALA DE JOGOS VERSÁTIL v0.7 — PAREAMENTO SINCRONIZADO
 
-Protótipo isolado. Não altera o APP SERVIÇOS VERSÁTIL oficial e não inclui `data.json`.
+Correção do sintoma observado na v0.6:
+- PC entrava rapidamente na partida humano × humano.
+- Celular demorava para receber a partida e podia disparar o fallback para jogador virtual.
 
-## Correção principal da v0.6
-A v0.5 conseguiu parear dois aparelhos pela internet, porém em um teste o nick escolhido no celular (`Atlas15`) não correspondeu ao nick exibido no PC (`Nuvem95`).
+## Causa
+Na v0.6, o criador da sala entrava imediatamente, mas o segundo jogador dependia de nova varredura/polling para descobrir a sala. Em celular/rede mais lenta, o timer do bot podia vencer essa corrida.
 
-A v0.6 corrige isso com uma identidade de sessão de matchmaking:
+## Correção v0.7
+- cada jogador passa a ouvir em tempo real sua própria entrada de fila;
+- o criador da sala marca as DUAS filas como `matched` e grava `roomId`;
+- o segundo aparelho recebe o `roomId` por listener em tempo real;
+- o timer do bot é cancelado assim que a fila fica `matched`;
+- antes de criar bot, o cliente verifica novamente se já existe pareamento humano;
+- cada cliente só remove a própria fila depois de validar e entrar na sala;
+- o tempo de fallback foi ampliado de ~8 para ~12 segundos para dar margem a redes móveis;
+- sessão e nick continuam vinculados ao pareamento atual.
 
-- cada entrada no Jogo da Velha recebe um `sessionId` novo;
-- existe somente uma entrada de fila por usuário;
-- a entrada antiga do mesmo usuário é substituída;
-- entradas de fila vencidas são removidas;
-- entradas sem presença online são descartadas;
-- antes do pareamento o adversário é reconfirmado no Firebase;
-- a sala é identificada pelas sessões atuais, e não apenas pelo UID;
-- uma sala antiga não pode ser reutilizada por uma sessão nova;
-- o cliente só aceita uma sala que contenha seu UID **e o sessionId atual**;
-- o nick gravado na sala é o nick da entrada de fila que efetivamente foi pareada;
-- antes de criar um jogador virtual existe uma última verificação de adversário humano válido.
+## Teste esperado
+PC: `Tucano27`
+Celular: `Atlas15`
 
-## O que testar
-1. Atualize os quatro arquivos do repositório `versatil-sala-de-jogos`.
-2. Aguarde o GitHub Pages republicar.
-3. Abra PC e celular.
-4. No PC use, por exemplo, `Tucano27`.
-5. No celular use `Atlas15`.
-6. Entre no Jogo da Velha nos dois quase ao mesmo tempo.
-7. No PC deve aparecer `Atlas15` + `Jogador online`.
-8. No celular deve aparecer `Tucano27` + `Jogador online`.
+Ao entrar quase simultaneamente:
+- PC deve mostrar `Atlas15` — Jogador online.
+- Celular deve mostrar `Tucano27` — Jogador online.
+- nenhum dos dois deve trocar para jogador virtual depois que a sala humana for criada.
 
-## Mantido
-- Firebase Authentication anônimo.
-- Realtime Database.
-- fallback para jogador virtual.
-- `Você perdeu!`.
-- `Jogar de novo`.
-- `Voltar à Sala de Jogos`.
-- nenhuma alteração no app oficial.
+Protótipo isolado; não contém `data.json` e não altera o APP Versátil oficial.
