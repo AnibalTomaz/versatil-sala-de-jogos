@@ -1,16 +1,16 @@
-# PROTÓTIPO SALA DE JOGOS VERSÁTIL v0.15
+# PROTÓTIPO SALA DE JOGOS VERSÁTIL v0.16
 
-## Batalha Naval — navios de guerra 3D
+Apenas a Batalha Naval foi refinada.
 
-A Batalha Naval agora representa a frota do próprio jogador com navios de guerra em efeito 3D, usando casco metálico, superestrutura, profundidade e sombra sobre o mar.
+Alterações:
 
-Regras preservadas:
-- os navios do adversário continuam ocultos;
-- o jogador continua clicando diretamente no mar adversário para atacar;
-- acertos permanecem destacados;
-- navio atingido recebe efeito visual de impacto/explosão;
-- funcionamento em PC e celular;
-- placar entre os mesmos adversários;
-- cores azul e vermelho.
+1. Tabuleiro em azul bem clarinho.
+2. Os navios aparecem como objetos sobre o tabuleiro, mantendo a água visível ao redor.
+3. Tiro que acerta somente água mostra uma gota azul mais escura.
+4. A parte do navio atingida fica vermelha.
+5. No campo adversário:
+   - erro na água = gota azul;
+   - acerto = posição vermelha.
+6. Os navios do adversário continuam ocultos até serem atingidos.
 
-Os demais jogos e as regras +18 do Poker permanecem como na v0.14.
+Os demais jogos, placares, cores, pareamento e Poker +18 permanecem inalterados.

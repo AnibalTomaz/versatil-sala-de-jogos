@@ -339,8 +339,8 @@ function renderBattleship(){
   const extra=$('#extraGameArea');
   extra.innerHTML=
     '<div class="battleWrap">'+
-      '<div class="battlePanel"><h3>Seu mar — Azul</h3><div id="mySea" class="battleGrid"></div><div class="battleLegend">Seus navios de guerra</div></div>'+
-      '<div class="battlePanel"><h3>Mar adversário — Vermelho</h3><div id="enemySea" class="battleGrid"></div><div class="battleLegend">Frota inimiga oculta até ser atingida</div></div>'+
+      '<div class="battlePanel"><h3>Seu mar — Azul</h3><div id="mySea" class="battleGrid"></div><div class="battleLegend">Seus navios posicionados sobre o mar</div></div>'+
+      '<div class="battlePanel"><h3>Mar adversário — Vermelho</h3><div id="enemySea" class="battleGrid"></div><div class="battleLegend">Água = gota azul • Acerto no navio = vermelho</div></div>'+
     '</div>';
 
   const my=$('#mySea'),enemy=$('#enemySea');
@@ -349,10 +349,12 @@ function renderBattleship(){
     const own=document.createElement('button');
     own.type='button';
     const shipClass=warshipSegmentClass(myFleet,i);
+    const ownWasShot=myIncoming.includes(i);
+    const ownIsShip=myFleet.includes(i);
     own.className='battleCell '+
       (shipClass?shipClass+' ':'')+
-      (myIncoming.includes(i)?'shotRed ':'')+
-      (myFleet.includes(i)&&myIncoming.includes(i)?'hitCell':'');
+      (ownWasShot&&!ownIsShip?'waterMiss ':'')+
+      (ownWasShot&&ownIsShip?'shipHitRed ':'');
     own.disabled=true;
     my.appendChild(own);
 
@@ -361,8 +363,8 @@ function renderBattleship(){
     const alreadyShot=myShots.includes(i);
     const hit=alreadyShot&&oppFleet.includes(i);
     target.className='battleCell enemyCell '+
-      (alreadyShot?'shotBlue ':'')+
-      (hit?'hitCell':'');
+      (alreadyShot&&!hit?'waterMiss ':'')+
+      (hit?'enemyShipHit ':'');
     target.setAttribute('aria-label',alreadyShot?'Posição já atacada':'Atacar posição '+(i+1));
 
     // Define explicitamente o estado clicável em vez de depender de herança/re-render.
