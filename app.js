@@ -28,31 +28,85 @@ function pickBannerIndex(forceDifferent=true){
   if(forceDifferent&&idx===currentBannerIndex)idx=(idx+1+Math.floor(Math.random()*(arr.length-1)))%arr.length;
   return idx;
 }
-function applyBanner(el,idx){
+function ensureBannerLayers(el){
+  if(!el)return [];
+  let layers=[...el.querySelectorAll('.gameBannerLayer')];
+  while(layers.length<2){
+    const layer=document.createElement('div');
+    layer.className='gameBannerLayer';
+    el.appendChild(layer);
+    layers.push(layer);
+  }
+  return layers.slice(0,2);
+}
+
+function applyBanner(el,idx,{instant=false}={}){
   const arr=loadBanners();
   if(!el)return;
-  const label=el.querySelector('span');
+
   if(idx<0||!arr[idx]){
-    el.style.backgroundImage='';
     el.classList.remove('hidden','hasImage');
     el.classList.add('bannerPlaceholder');
-    if(label)label.textContent='BANNER RANDÔMICO';
+    const layers=ensureBannerLayers(el);
+    layers.forEach(layer=>{
+      layer.classList.remove('active');
+      layer.style.backgroundImage='';
+    });
     return;
   }
-  el.style.backgroundImage=`url("${arr[idx]}")`;
+
   el.classList.remove('hidden','bannerPlaceholder');
   el.classList.add('hasImage');
+
+  const layers=ensureBannerLayers(el);
+  const current=layers.find(l=>l.classList.contains('active'))||layers[0];
+  const next=layers.find(l=>l!==current)||layers[1];
+
+  // Se ainda não há imagem ativa, mostra diretamente.
+  if(!current.style.backgroundImage){
+    current.style.backgroundImage=`url("${arr[idx]}")`;
+    current.classList.add('active');
+    next.classList.remove('active');
+    next.style.backgroundImage='';
+    return;
+  }
+
+  // Se for a mesma imagem, não reinicia a animação.
+  const targetUrl=`url("${arr[idx]}")`;
+  if(current.style.backgroundImage===targetUrl)return;
+
+  next.style.backgroundImage=targetUrl;
+
+  if(instant){
+    current.classList.remove('active');
+    next.classList.add('active');
+    setTimeout(()=>{current.style.backgroundImage=''},50);
+    return;
+  }
+
+  // Crossfade: novo banner entra enquanto o anterior sai suavemente.
+  requestAnimationFrame(()=>{
+    next.classList.add('active');
+    current.classList.remove('active');
+  });
+
+  setTimeout(()=>{
+    if(!current.classList.contains('active')){
+      current.style.backgroundImage='';
+    }
+  },1350);
 }
 function showAccessBanner(){
   currentBannerIndex=pickBannerIndex(true);
-  applyBanner($('#homeBanner'),currentBannerIndex);
-  applyBanner($('#gameBanner'),currentBannerIndex);
+  applyBanner($('#homeBanner'),currentBannerIndex,{instant:true});
+  applyBanner($('#gameBanner'),currentBannerIndex,{instant:true});
 }
 function startGameBannerRotation(){
   clearInterval(bannerRotateTimer);
-  applyBanner($('#gameBanner'),currentBannerIndex);
+  applyBanner($('#gameBanner'),currentBannerIndex,{instant:true});
   if(loadBanners().length>1)bannerRotateTimer=setInterval(()=>{
-    currentBannerIndex=pickBannerIndex(true);applyBanner($('#gameBanner'),currentBannerIndex);
+    currentBannerIndex=pickBannerIndex(true);
+    applyBanner($('#gameBanner'),currentBannerIndex);
   },60000);
 }
 function stopGameBannerRotation(){clearInterval(bannerRotateTimer);bannerRotateTimer=null}

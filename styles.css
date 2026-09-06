@@ -948,3 +948,52 @@ button.secondary{background:#fff;color:#185b91;border:1px solid #aac1d4}button:d
   .gameTitleIcon{min-width:21px;height:21px;font-size:16px}
   .battleBoatImage{width:96%;height:96%;left:2%;top:2%}
 }
+
+
+/* =========================
+   v0.26 — Transição suave entre banners
+   ========================= */
+.gameBanner{
+  position:relative;
+  overflow:hidden;
+  background-image:none!important;
+}
+
+.gameBannerLayer{
+  position:absolute;
+  inset:0;
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
+  opacity:0;
+  transition:opacity 1.2s ease-in-out;
+  will-change:opacity;
+  pointer-events:none;
+}
+
+.gameBannerLayer.active{
+  opacity:1;
+}
+
+.gameBanner.bannerPlaceholder::before{
+  content:"BANNER RANDÔMICO";
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:1;
+  background:linear-gradient(90deg,#d8f2f7,#8ed7e8);
+  color:#17324a;
+  font-weight:700;
+  letter-spacing:.4px;
+}
+
+.gameBanner.hasImage::before{
+  display:none;
+}
+
+/* Mantém qualquer texto antigo de placeholder escondido para não sobrepor os layers */
+.gameBanner > span{
+  display:none!important;
+}
