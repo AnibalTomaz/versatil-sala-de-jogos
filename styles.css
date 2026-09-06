@@ -889,3 +889,62 @@ button.secondary{background:#fff;color:#185b91;border:1px solid #aac1d4}button:d
     width:100%!important;
   }
 }
+
+
+/* =========================
+   v0.24 — Barcos enviados pelo usuário + ícones nos títulos
+   ========================= */
+
+.gameNameBlock h2{
+  display:flex;
+  align-items:center;
+  gap:7px;
+}
+.gameTitleIcon{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:24px;
+  height:24px;
+  font-size:18px;
+  line-height:1;
+}
+
+/* O barco passa a ser a imagem fornecida pelo usuário, posicionada sobre a casa. */
+.singleShip::before,
+.singleShip::after,
+.singleShip.caravela::before,
+.singleShip.submarino::before,
+.singleShip.submarino::after,
+.singleShip.caiaque::before{
+  content:none!important;
+  display:none!important;
+}
+.battleCell.singleShip{
+  background:rgba(255,255,255,.38)!important;
+}
+.battleBoatImage{
+  position:absolute;
+  z-index:6;
+  width:92%;
+  height:92%;
+  object-fit:contain;
+  left:4%;
+  top:4%;
+  pointer-events:none;
+  filter:drop-shadow(0 2px 2px rgba(0,0,0,.24));
+}
+.battleCell.shipHitRed .battleBoatImage{
+  filter:
+    sepia(1)
+    saturate(8)
+    hue-rotate(320deg)
+    brightness(.78)
+    drop-shadow(0 2px 2px rgba(0,0,0,.22));
+}
+
+/* Em telas pequenas, mantém o ícone perto do nome sem esmagar o banner. */
+@media(max-width:620px){
+  .gameTitleIcon{min-width:21px;height:21px;font-size:16px}
+  .battleBoatImage{width:96%;height:96%;left:2%;top:2%}
+}

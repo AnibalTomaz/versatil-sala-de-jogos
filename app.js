@@ -96,6 +96,13 @@ function stopQueueCountdown(){clearInterval(queueCountdownTimer);queueCountdownT
 
 const BOT_WAIT_MS=15000,QUEUE_MAX_AGE_MS=45000;
 const GAME_NAMES={tictactoe:'Jogo da Velha',connect4:'Quatro em Linha',battleship:'Batalha Naval',chess:'Xadrez',poker:'Poker — Texas Hold’em (+18)'};
+const GAME_ICONS={
+  tictactoe:'✕○',
+  connect4:'●●',
+  battleship:'⚓',
+  chess:'♟',
+  poker:'♠'
+};
 
 let uid=null,nick='',nickKey='',sessionId='',gameKey='',roomId=null,room=null;
 let matching=false,enteringRoom=false,botTimer=null,seekTimer=null,roomUnsub=null,assignUnsub=null;
@@ -357,7 +364,7 @@ async function enter(rid){
   enteringRoom=true;clearTimeout(botTimer);clearSeek();stopQueueCountdown();startGameBannerRotation();
   const rs=await get(ref(db,'rooms/'+rid)),rv=rs.val();
   if(!rv||!Object.values(rv.players||{}).some(p=>p?.uid===uid&&p?.sessionId===sessionId)){enteringRoom=false;return}
-  roomId=rid;gameKey=rv.game;matching=false;show($('#gameView'));$('#gameTitle').textContent=GAME_NAMES[gameKey];$('#matchInfo').textContent='';
+  roomId=rid;gameKey=rv.game;matching=false;show($('#gameView'));$('#gameTitle').innerHTML=`<span class="gameTitleIcon">${GAME_ICONS[gameKey]||'🎮'}</span><span>${GAME_NAMES[gameKey]}</span>`;$('#matchInfo').textContent='';
   statsRecordMatchStart(rv);
   stopAssignmentListener();
   if(roomUnsub)roomUnsub();
@@ -531,11 +538,14 @@ function renderBattleship(){
       (ownWasShot&&ownIsShip?'shipHitRed ':'');
     own.disabled=true;
     if(ownIsShip){
-      const lab=document.createElement('span');
-      lab.className='shipLabel';
-      lab.textContent=type==='caravela'?'CAR':type==='submarino'?'SUB':'CAI';
-      lab.title=fleetName(type);
-      own.appendChild(lab);
+      const img=document.createElement('img');
+      img.className='battleBoatImage';
+      img.src='barco-pirata.png';
+      img.alt=fleetName(type);
+      img.title=fleetName(type);
+      own.appendChild(img);
+
+
     }
     my.appendChild(own);
 
