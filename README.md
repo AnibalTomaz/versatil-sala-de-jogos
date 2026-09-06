@@ -1,23 +1,13 @@
-# SALA DE JOGOS VERSÁTIL v0.21
+# SALA DE JOGOS VERSÁTIL v0.22
 
-Correções desta versão:
+Ajuste específico do cabeçalho da Sala de Jogos conforme o modelo enviado.
 
-1. Contador da fila
-- o círculo continua girando;
-- o número da contagem regressiva fica completamente estático no centro;
-- o número não herda mais a animação do círculo.
+## Cabeçalho
+- lado esquerdo: ícone + nome `Sala de Jogos`;
+- logo abaixo do nome, dentro do mesmo bloco: texto explicativo;
+- todo esse conteúdo ocupa a área esquerda do cabeçalho;
+- lado direito: banner randômico ocupando a área reservada;
+- proporção aproximada no desktop: 43% informações / 57% banner.
 
-2. Área dos banners
-- o espaço do banner passa a ficar claramente visível no modelo mesmo antes do upload;
-- quando não há imagem carregada, aparece o texto `BANNER RANDÔMICO`;
-- somente imagens realmente carregadas participam da rotação;
-- quando um banner real é exibido, o texto de modelo desaparece.
-
-3. Reorganização das páginas
-- Sala de Jogos: ícone e nome ficam compactos à esquerda e o banner ganha mais largura à direita;
-- dentro das partidas: nome do jogo fica à esquerda, banner no centro e botão `Voltar à Sala` à direita;
-- no celular, o banner ocupa uma linha inteira abaixo do nome/botão para não ficar comprimido.
-
-4. Compatibilidade móvel
-- regras específicas para tablet, celular e telas até 420 px;
-- banner mantém proporção e visibilidade sem esmagar nomes ou botões.
+## Celular
+Em telas menores, o bloco de nome + texto permanece unido e o banner passa para baixo, ocupando toda a largura, sem comprimir o conteúdo.
