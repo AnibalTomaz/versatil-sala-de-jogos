@@ -395,3 +395,115 @@ button.secondary{background:#fff;color:#185b91;border:1px solid #aac1d4}button:d
   background:#b71c1c;
   box-shadow:0 0 0 3px rgba(255,255,255,.45);
 }
+
+
+/* =========================
+   v0.17 — Batalha Naval: 5 embarcações de 1 casa
+   ========================= */
+.singleShip{
+  position:relative;
+}
+.singleShip::before{
+  content:"";
+  position:absolute;
+  z-index:5;
+  left:10%;
+  right:10%;
+  top:18%;
+  bottom:18%;
+  background:linear-gradient(180deg,#eceff1 0%,#90a4ae 46%,#455a64 100%);
+  border:1px solid #263238;
+  box-shadow:0 4px 5px rgba(0,0,0,.28),inset 0 2px 2px rgba(255,255,255,.7);
+  transform:perspective(80px) rotateX(18deg);
+}
+.singleShip.caravela::before{
+  clip-path:polygon(50% 0,92% 35%,78% 100%,22% 100%,8% 35%);
+  border-radius:45% 45% 24% 24%;
+}
+.singleShip.submarino::before{
+  left:12%;
+  right:12%;
+  top:28%;
+  bottom:28%;
+  border-radius:999px;
+  background:linear-gradient(180deg,#cfd8dc 0%,#607d8b 52%,#263238 100%);
+}
+.singleShip.submarino::after{
+  content:"";
+  position:absolute;
+  z-index:6;
+  width:18%;
+  height:22%;
+  left:41%;
+  top:20%;
+  border-radius:3px 3px 0 0;
+  background:#455a64;
+  box-shadow:0 2px 2px rgba(0,0,0,.28);
+}
+.singleShip.caiaque::before{
+  left:22%;
+  right:22%;
+  top:8%;
+  bottom:8%;
+  clip-path:polygon(50% 0,85% 20%,72% 100%,28% 100%,15% 20%);
+  background:linear-gradient(90deg,#6d4c41,#d7ccc8 48%,#6d4c41);
+}
+.singleShip.shipHitRed::before{
+  background:linear-gradient(180deg,#ef5350 0%,#c62828 55%,#7f0000 100%)!important;
+}
+.singleShip.shipHitRed::after{
+  background:#b71c1c!important;
+}
+.shipLabel{
+  position:absolute;
+  left:50%;
+  bottom:2px;
+  transform:translateX(-50%);
+  z-index:7;
+  font-size:8px;
+  font-weight:900;
+  color:#17324a;
+  background:rgba(255,255,255,.74);
+  padding:1px 3px;
+  border-radius:3px;
+  pointer-events:none;
+}
+
+/* =========================
+   v0.17 — Poker: controles de aposta play money
+   ========================= */
+.pokerBetPanel{
+  margin-top:12px;
+  padding:12px;
+  border-radius:12px;
+  background:rgba(255,255,255,.10);
+  border:1px solid rgba(255,255,255,.22);
+}
+.pokerBetInfo{
+  display:flex;
+  justify-content:center;
+  gap:14px;
+  flex-wrap:wrap;
+  font-size:12px;
+  margin-bottom:9px;
+}
+.pokerBetControls{
+  display:flex;
+  justify-content:center;
+  gap:8px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+.pokerBetControls input{
+  width:105px;
+  flex:0 0 105px;
+  background:#fff;
+}
+.pokerBetControls button{
+  white-space:nowrap;
+}
+.pokerActionMsg{
+  margin-top:8px;
+  font-size:12px;
+  min-height:16px;
+}

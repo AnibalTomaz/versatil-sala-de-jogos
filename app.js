@@ -93,7 +93,14 @@ function initialGameState(key,blue,red){
   const base={game:key,status:'active',createdAt:Date.now(),players:{blue,red},score:{blue:0,red:0},winner:'',rematch:{}};
   if(key==='tictactoe')return {...base,board:Array(9).fill(''),turn:'blue'};
   if(key==='connect4')return {...base,board:Array(42).fill(''),turn:'blue'};
-  if(key==='battleship')return {...base,ships:{blue:makeFleet(),red:makeFleet()},shots:{blue:[],red:[]},turn:'blue'};
+  if(key==='battleship'){
+    const blueFleet=makeFleet(),redFleet=makeFleet();
+    return {...base,
+      ships:{blue:blueFleet,red:redFleet},
+      shipTypes:{blue:makeFleetTypes(blueFleet),red:makeFleetTypes(redFleet)},
+      shots:{blue:[],red:[]},turn:'blue'
+    };
+  }
   if(key==='chess')return {...base,board:initialChessBoard(),turn:'blue',lastMove:null};
   if(key==='poker')return buildPokerHand(base);
   return base;
@@ -296,33 +303,29 @@ function c4BotColumn(b){
 
 /* BATALHA NAVAL */
 function makeFleet(){
-  const sizes=[3,2,2],occupied=new Set(),fleet=[];
-  for(const size of sizes){
-    let placed=false;
-    for(let tries=0;tries<200&&!placed;tries++){
-      const horiz=Math.random()<.5,r=Math.floor(Math.random()*8),c=Math.floor(Math.random()*8);
-      const cells=[];for(let k=0;k<size;k++){const rr=r+(horiz?0:k),cc=c+(horiz?k:0);if(rr>=8||cc>=8){cells.length=0;break}cells.push(rr*8+cc)}
-      if(cells.length===size&&cells.every(x=>!occupied.has(x))){cells.forEach(x=>occupied.add(x));fleet.push(...cells);placed=true}
-    }
-  }return fleet.sort((a,b)=>a-b);
+  // Exatamente 5 embarcações, cada uma ocupando somente 1 casa:
+  // 2 caravelas, 2 submarinos e 1 caiaque.
+  const cells=[];
+  while(cells.length<5){
+    const i=Math.floor(Math.random()*64);
+    if(!cells.includes(i))cells.push(i);
+  }
+  return cells.sort((a,b)=>a-b);
 }
-function warshipSegmentClass(fleet,index){
-  if(!fleet.includes(index))return '';
-  const r=Math.floor(index/8),c=index%8;
-  const left=c>0&&fleet.includes(index-1);
-  const right=c<7&&fleet.includes(index+1);
-  const up=r>0&&fleet.includes(index-8);
-  const down=r<7&&fleet.includes(index+8);
-
-  // Classificação visual aproximada do trecho do casco.
-  if((right&&!left)||(down&&!up))return 'warship3d warshipBow';
-  if((left&&!right)||(up&&!down))return 'warship3d warshipStern';
-  return 'warship3d warshipMid';
+function makeFleetTypes(fleet){
+  const types=['caravela','caravela','submarino','submarino','caiaque'];
+  const map={};
+  fleet.forEach((cell,i)=>map[cell]=types[i]);
+  return map;
+}
+function fleetName(type){
+  return type==='caravela'?'Caravela':type==='submarino'?'Submarino':'Caiaque';
 }
 
 function renderBattleship(){
   const side=sideOf(room),opp=otherSide(side);
   const myFleet=Array.isArray(room.ships?.[side])?room.ships[side]:[];
+  const myTypes=room.shipTypes?.[side]||makeFleetTypes(myFleet);
   const myIncoming=Array.isArray(room.shots?.[opp])?room.shots[opp]:[];
   const myShots=Array.isArray(room.shots?.[side])?room.shots[side]:[];
   const oppFleet=Array.isArray(room.ships?.[opp])?room.ships[opp]:[];
@@ -339,8 +342,8 @@ function renderBattleship(){
   const extra=$('#extraGameArea');
   extra.innerHTML=
     '<div class="battleWrap">'+
-      '<div class="battlePanel"><h3>Seu mar — Azul</h3><div id="mySea" class="battleGrid"></div><div class="battleLegend">Seus navios posicionados sobre o mar</div></div>'+
-      '<div class="battlePanel"><h3>Mar adversário — Vermelho</h3><div id="enemySea" class="battleGrid"></div><div class="battleLegend">Água = gota azul • Acerto no navio = vermelho</div></div>'+
+      '<div class="battlePanel"><h3>Seu mar — Azul</h3><div id="mySea" class="battleGrid"></div><div class="battleLegend">2 caravelas • 2 submarinos • 1 caiaque</div></div>'+
+      '<div class="battlePanel"><h3>Mar adversário — Vermelho</h3><div id="enemySea" class="battleGrid"></div><div class="battleLegend">💧 água • vermelho = embarcação atingida</div></div>'+
     '</div>';
 
   const my=$('#mySea'),enemy=$('#enemySea');
@@ -348,14 +351,21 @@ function renderBattleship(){
   for(let i=0;i<64;i++){
     const own=document.createElement('button');
     own.type='button';
-    const shipClass=warshipSegmentClass(myFleet,i);
     const ownWasShot=myIncoming.includes(i);
     const ownIsShip=myFleet.includes(i);
+    const type=ownIsShip?(myTypes[i]||'caravela'):'';
     own.className='battleCell '+
-      (shipClass?shipClass+' ':'')+
+      (ownIsShip?`singleShip ${type} `:'')+
       (ownWasShot&&!ownIsShip?'waterMiss ':'')+
       (ownWasShot&&ownIsShip?'shipHitRed ':'');
     own.disabled=true;
+    if(ownIsShip){
+      const lab=document.createElement('span');
+      lab.className='shipLabel';
+      lab.textContent=type==='caravela'?'CAR':type==='submarino'?'SUB':'CAI';
+      lab.title=fleetName(type);
+      own.appendChild(lab);
+    }
     my.appendChild(own);
 
     const target=document.createElement('button');
@@ -367,21 +377,20 @@ function renderBattleship(){
       (hit?'enemyShipHit ':'');
     target.setAttribute('aria-label',alreadyShot?'Posição já atacada':'Atacar posição '+(i+1));
 
-    // Define explicitamente o estado clicável em vez de depender de herança/re-render.
     const canShoot=!room.winner && room.turn===side && !alreadyShot;
     target.disabled=!canShoot;
 
     if(canShoot){
-      target.addEventListener('click',ev=>{
+      let fired=false;
+      const fire=ev=>{
+        if(fired)return;
+        fired=true;
         ev.preventDefault();
         ev.stopPropagation();
         battleShot(i);
-      },{once:true});
-      target.addEventListener('touchend',ev=>{
-        ev.preventDefault();
-        ev.stopPropagation();
-        battleShot(i);
-      },{once:true});
+      };
+      target.addEventListener('click',fire,{once:true});
+      target.addEventListener('touchend',fire,{once:true});
     }
     enemy.appendChild(target);
   }
@@ -584,11 +593,38 @@ function chessBotMove(r){
 const SUITS=['♠','♥','♦','♣'],RANKS=['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
 function makeDeck(){const d=[];for(const s of SUITS)for(const r of RANKS)d.push(r+s);for(let i=d.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[d[i],d[j]]=[d[j],d[i]]}return d}
 function buildPokerHand(base){
-  const players={blue:base.players.blue,red:base.players.red,bot2:{uid:'bot2',nick:'BOT618',sessionId:'bot2',type:'bot'},bot3:{uid:'bot3',nick:'BOT842',sessionId:'bot3',type:'bot'}};
-  const d=makeDeck(),holes={};for(const s of Object.keys(players))holes[s]=[d.pop(),d.pop()];
+  const players={
+    blue:base.players.blue,
+    red:base.players.red,
+    bot2:{uid:'bot2',nick:'BOT618',sessionId:'bot2',type:'bot'},
+    bot3:{uid:'bot3',nick:'BOT842',sessionId:'bot3',type:'bot'}
+  };
+  const d=makeDeck(),holes={};
+  for(const s of Object.keys(players))holes[s]=[d.pop(),d.pop()];
   const community=[d.pop(),d.pop(),d.pop(),d.pop(),d.pop()];
-  return {...base,players,score:{blue:0,red:0,bot2:0,bot3:0},chips:{blue:990,red:990,bot2:990,bot3:990},pot:40,stage:0,holes,community,winner:'',winnerSeats:[],rematch:{},status:'active'};
+  const chips={blue:1000,red:1000,bot2:1000,bot3:1000};
+  const contributions={blue:10,red:10,bot2:10,bot3:10};
+  Object.keys(chips).forEach(s=>chips[s]-=10);
+  return {...base,
+    players,
+    score:{blue:0,red:0,bot2:0,bot3:0},
+    chips,
+    pot:40,
+    stage:0,
+    holes,
+    community,
+    currentBet:10,
+    minRaise:10,
+    contributions,
+    folded:{},
+    lastAction:'Blinds fictícios de 10 fichas por jogador.',
+    winner:'',
+    winnerSeats:[],
+    rematch:{},
+    status:'active'
+  };
 }
+
 function cardObj(c){const suit=c.slice(-1),rank=c.slice(0,-1),v=RANKS.indexOf(rank)+2;return{c,suit,rank,v}}
 function combos5(arr){const out=[];for(let a=0;a<3;a++)for(let b=a+1;b<4;b++)for(let c=b+1;c<5;c++)for(let d=c+1;d<6;d++)for(let e=d+1;e<7;e++)out.push([arr[a],arr[b],arr[c],arr[d],arr[e]]);return out}
 function eval5(cards){
@@ -608,10 +644,22 @@ function eval5(cards){
 function cmpRank(a,b){for(let i=0;i<Math.max(a.length,b.length);i++){const x=a[i]||0,y=b[i]||0;if(x!==y)return x-y}return 0}
 function best7(cards){return combos5(cards).map(eval5).sort((a,b)=>cmpRank(b,a))[0]}
 function pokerResolve(r){
-  const seats=Object.keys(r.players),ranked=seats.map(s=>[s,best7([...(r.holes[s]||[]),...r.community])]);
-  ranked.sort((a,b)=>cmpRank(b[1],a[1]));const best=ranked[0][1],wins=ranked.filter(x=>cmpRank(x[1],best)===0).map(x=>x[0]);
+  const active=Object.keys(r.players).filter(s=>!r.folded?.[s]);
+  if(active.length===1){
+    const wins=[active[0]];
+    r.winnerSeats=wins;r.winner=wins[0];
+    r.chips[wins[0]]=(r.chips[wins[0]]||0)+(r.pot||0);
+    r.score[wins[0]]=(r.score[wins[0]]||0)+1;
+    r.pot=0;
+    return;
+  }
+  const ranked=active.map(s=>[s,best7([...(r.holes[s]||[]),...r.community])]);
+  ranked.sort((a,b)=>cmpRank(b[1],a[1]));
+  const best=ranked[0][1],wins=ranked.filter(x=>cmpRank(x[1],best)===0).map(x=>x[0]);
   r.winnerSeats=wins;r.winner=wins.length===1?wins[0]:'draw';
-  const share=Math.floor((r.pot||0)/wins.length);wins.forEach(s=>{r.chips[s]=(r.chips[s]||0)+share;r.score[s]=(r.score[s]||0)+1});
+  const share=Math.floor((r.pot||0)/wins.length);
+  wins.forEach(s=>{r.chips[s]=(r.chips[s]||0)+share;r.score[s]=(r.score[s]||0)+1});
+  r.pot=0;
 }
 function cardHtml(c,hidden=false){
   if(hidden)return'<div class="playingCard back">◆</div>';const red=c.includes('♥')||c.includes('♦');return`<div class="playingCard ${red?'redSuit':''}">${c}</div>`;
@@ -625,7 +673,6 @@ function renderPoker(){
   const seats=Object.keys(room.players||{});
   const extra=$('#extraGameArea');
 
-  // Ordena a mesa para manter o usuário sempre na posição inferior.
   const others=seats.filter(s=>s!==side);
   const positions=[
     {seat:others[0],pos:'top'},
@@ -641,6 +688,7 @@ function renderPoker(){
   for(const {seat,pos} of positions){
     const p=room.players[seat];
     const you=p.uid===uid&&p.sessionId===sessionId;
+    const folded=!!room.folded?.[seat];
     const hole=room.holes?.[seat]||[];
     const holeHtml=you
       ? hole.map(c=>{
@@ -652,7 +700,7 @@ function renderPoker(){
     seatHtml+=`
       <div class="pokerSeatPos ${pos} ${you?'you':''}">
         <strong>${p.nick}</strong>
-        <small>${you?'Você':p.type==='bot'?'Jogador virtual':'Jogador online'}</small>
+        <small>${you?'Você':p.type==='bot'?'Jogador virtual':'Jogador online'}${folded?' • desistiu':''}</small>
         <div class="scoreNumber">${Number(room.score?.[seat]||0)}</div>
         <div class="chips">Fichas fictícias: ${Number(room.chips?.[seat]||0)}</div>
         <div class="pokerSeatCards">${holeHtml}</div>
@@ -670,6 +718,13 @@ function renderPoker(){
                     room.stage===2?'Revelar river':
                     room.stage===3?'Resultado':'Mão encerrada';
 
+  const myContribution=Number(room.contributions?.[side]||0);
+  const currentBet=Number(room.currentBet||0);
+  const toCall=Math.max(0,currentBet-myContribution);
+  const myChips=Number(room.chips?.[side]||0);
+  const minRaise=Math.max(10,Number(room.minRaise||10));
+  const controlsDisabled=!!room.winner||!!room.folded?.[side];
+
   extra.innerHTML=`
     <div class="pokerArena">
       ${seatHtml}
@@ -679,6 +734,23 @@ function renderPoker(){
           <div class="cards">${community}</div>
           <div>Pot fictício: ${Number(room.pot||0)}</div>
           <div class="playMoneyNote">Sem dinheiro real, depósitos, retiradas, prêmios ou conversão de fichas.</div>
+
+          <div class="pokerBetPanel">
+            <div class="pokerBetInfo">
+              <span>Aposta atual: ${currentBet}</span>
+              <span>Para pagar: ${toCall}</span>
+              <span>Suas fichas: ${myChips}</span>
+            </div>
+            <div class="pokerBetControls">
+              <button id="pokerCheckCall">${toCall>0?'Pagar para ver':'Mesa / Check'}</button>
+              <input id="pokerRaiseValue" type="number" min="${minRaise}" step="10" value="${minRaise}" aria-label="Valor do aumento">
+              <button id="pokerRaise">Aumentar</button>
+              <button id="pokerAllIn">All in</button>
+              <button id="pokerFold" class="secondary">Desistir</button>
+            </div>
+            <div class="pokerActionMsg">${room.lastAction||''}</div>
+          </div>
+
           <div class="pokerActionsBelow">
             <button id="pokerNext">${actionLabel}</button>
           </div>
@@ -694,23 +766,115 @@ function renderPoker(){
     next.onclick=pokerNextStage;
   }
 
+  const cc=$('#pokerCheckCall'),raise=$('#pokerRaise'),allin=$('#pokerAllIn'),fold=$('#pokerFold');
+  if(cc){cc.disabled=controlsDisabled;cc.onclick=()=>pokerBetAction('call')}
+  if(raise){raise.disabled=controlsDisabled;raise.onclick=()=>pokerBetAction('raise')}
+  if(allin){allin.disabled=controlsDisabled||myChips<=0;allin.onclick=()=>pokerBetAction('allin')}
+  if(fold){fold.disabled=controlsDisabled;fold.onclick=()=>pokerBetAction('fold')}
+
   if(room.winner)renderPokerEnd();
   else $('#endModal').classList.add('hidden');
 }
+async function pokerBetAction(action){
+  if(!roomId||!room||room.winner)return;
+  const side=sideOf(room);
+  if(!side||room.folded?.[side])return;
+
+  const rawRaise=Number($('#pokerRaiseValue')?.value||0);
+
+  await runTransaction(ref(db,'rooms/'+roomId),r=>{
+    if(!r||r.winner||r.folded?.[side])return r;
+
+    r.chips=r.chips||{};
+    r.contributions=r.contributions||{};
+    r.folded=r.folded||{};
+    r.currentBet=Number(r.currentBet||0);
+    r.minRaise=Math.max(10,Number(r.minRaise||10));
+
+    const chips=Number(r.chips[side]||0);
+    const contrib=Number(r.contributions[side]||0);
+    const toCall=Math.max(0,r.currentBet-contrib);
+
+    if(action==='fold'){
+      r.folded[side]=true;
+      r.lastAction=`${r.players[side]?.nick||'Jogador'} desistiu da mão.`;
+    }else if(action==='call'){
+      const pay=Math.min(chips,toCall);
+      r.chips[side]=chips-pay;
+      r.contributions[side]=contrib+pay;
+      r.pot=Number(r.pot||0)+pay;
+      r.lastAction=toCall>0
+        ?`${r.players[side]?.nick||'Jogador'} pagou ${pay} fichas fictícias para ver.`
+        :`${r.players[side]?.nick||'Jogador'} deu check.`;
+    }else if(action==='raise'){
+      const raiseBy=Math.max(r.minRaise,Math.floor(rawRaise/10)*10||r.minRaise);
+      const target=r.currentBet+raiseBy;
+      const needed=Math.max(0,target-contrib);
+      const pay=Math.min(chips,needed);
+      if(pay<=toCall)return r;
+      r.chips[side]=chips-pay;
+      r.contributions[side]=contrib+pay;
+      r.pot=Number(r.pot||0)+pay;
+      r.currentBet=Math.max(r.currentBet,r.contributions[side]);
+      r.minRaise=raiseBy;
+      r.lastAction=`${r.players[side]?.nick||'Jogador'} aumentou para ${r.currentBet} fichas fictícias.`;
+    }else if(action==='allin'){
+      const pay=chips;
+      r.chips[side]=0;
+      r.contributions[side]=contrib+pay;
+      r.pot=Number(r.pot||0)+pay;
+      if(r.contributions[side]>r.currentBet){
+        r.minRaise=Math.max(r.minRaise,r.contributions[side]-r.currentBet);
+        r.currentBet=r.contributions[side];
+      }
+      r.lastAction=`${r.players[side]?.nick||'Jogador'} foi all in com ${pay} fichas fictícias.`;
+    }
+
+    const active=Object.keys(r.players||{}).filter(s=>!r.folded?.[s]);
+    if(active.length===1)pokerResolve(r);
+
+    r.updatedAt=Date.now();
+    return r;
+  });
+}
+
 async function pokerNextStage(){
   await runTransaction(ref(db,'rooms/'+roomId),r=>{
-    if(!r||r.winner)return r;r.stage=(r.stage||0)+1;if(r.stage>=4)pokerResolve(r);r.updatedAt=Date.now();return r;
+    if(!r||r.winner)return r;
+    r.stage=(r.stage||0)+1;
+    if(r.stage>=4){
+      pokerResolve(r);
+    }else{
+      // Nova rodada de apostas: zera a aposta da rua, preservando o pot.
+      r.currentBet=0;
+      r.minRaise=10;
+      r.contributions={};
+      Object.keys(r.players||{}).forEach(s=>r.contributions[s]=0);
+      r.lastAction=r.stage===1?'Flop aberto.':
+                   r.stage===2?'Turn aberto.':
+                   r.stage===3?'River aberto.':'';
+    }
+    r.updatedAt=Date.now();
+    return r;
   });
 }
 function renderPokerEnd(){
   const side=sideOf(room),wins=room.winnerSeats||[],won=wins.includes(side);
   $('#endTitle').textContent=won?'Você venceu!':'Você perdeu!';
   $('#endText').textContent=won?'Você venceu esta mão recreativa.':'Outro participante venceu esta mão.';
-  const opp=opponentOf(room),humanGame=opp?.type!=='bot',myVote=humanGame&&room.rematch?.[uid]?.accepted;
-  if(myVote){$('#endModal').classList.add('hidden');$('#status').textContent='Aguardando o adversário aceitar jogar de novo…'}
-  else $('#endModal').classList.remove('hidden');
-}
 
+  const humans=Object.values(room.players||{}).filter(p=>p?.type==='human');
+  const myVote=room.rematch?.[uid]?.accepted===true&&room.rematch?.[uid]?.sessionId===sessionId;
+
+  if(humans.length>1&&myVote){
+    $('#endModal').classList.add('hidden');
+    $('#status').textContent='Aguardando o outro jogador aceitar jogar de novo…';
+    $('#rematchBtn').disabled=true;
+  }else{
+    $('#endModal').classList.remove('hidden');
+    $('#rematchBtn').disabled=false;
+  }
+}
 /* BOT */
 let botBusy=false;
 async function maybeBotMove(){
@@ -748,13 +912,48 @@ function resetForRematch(r){
   const keepScore=r.score,keepPlayers=r.players,keepChips=r.chips;
   if(r.game==='tictactoe')return {...r,board:Array(9).fill(''),turn:'blue',winner:'',rematch:{},score:keepScore,updatedAt:Date.now()};
   if(r.game==='connect4')return {...r,board:Array(42).fill(''),turn:'blue',winner:'',rematch:{},score:keepScore,updatedAt:Date.now()};
-  if(r.game==='battleship')return {...r,ships:{blue:makeFleet(),red:makeFleet()},shots:{blue:[],red:[]},turn:'blue',winner:'',rematch:{},score:keepScore,updatedAt:Date.now()};
+  if(r.game==='battleship'){
+    const blueFleet=makeFleet(),redFleet=makeFleet();
+    return {...r,
+      ships:{blue:blueFleet,red:redFleet},
+      shipTypes:{blue:makeFleetTypes(blueFleet),red:makeFleetTypes(redFleet)},
+      shots:{blue:[],red:[]},turn:'blue',winner:'',rematch:{},score:keepScore,updatedAt:Date.now()
+    };
+  }
   if(r.game==='chess')return {...r,board:initialChessBoard(),turn:'blue',winner:'',rematch:{},score:keepScore,lastMove:null,updatedAt:Date.now()};
   if(r.game==='poker'){
-    const base={...r,players:keepPlayers,score:keepScore,chips:keepChips||r.chips,winner:'',winnerSeats:[],rematch:{}};
-    const d=makeDeck(),holes={};Object.keys(keepPlayers).forEach(s=>holes[s]=[d.pop(),d.pop()]);
-    const chips={...base.chips};Object.keys(chips).forEach(s=>{if(chips[s]<10)chips[s]=1000;chips[s]-=10});
-    return {...base,holes,community:[d.pop(),d.pop(),d.pop(),d.pop(),d.pop()],stage:0,pot:Object.keys(chips).length*10,chips,updatedAt:Date.now()};
+    const base={...r,players:keepPlayers,score:keepScore,winner:'',winnerSeats:[],rematch:{}};
+    const d=makeDeck(),holes={};
+    Object.keys(keepPlayers).forEach(s=>holes[s]=[d.pop(),d.pop()]);
+
+    const chips={...keepChips};
+    Object.keys(chips).forEach(s=>{
+      if(Number(chips[s]||0)<10)chips[s]=1000;
+    });
+
+    const contributions={},folded={};
+    let pot=0;
+    Object.keys(chips).forEach(s=>{
+      const blind=Math.min(10,Number(chips[s]||0));
+      chips[s]-=blind;
+      contributions[s]=blind;
+      folded[s]=false;
+      pot+=blind;
+    });
+
+    return {...base,
+      holes,
+      community:[d.pop(),d.pop(),d.pop(),d.pop(),d.pop()],
+      stage:0,
+      pot,
+      chips,
+      currentBet:10,
+      minRaise:10,
+      contributions,
+      folded,
+      lastAction:'Nova mão iniciada. Blinds fictícios de 10 fichas por jogador.',
+      updatedAt:Date.now()
+    };
   }
   return r;
 }

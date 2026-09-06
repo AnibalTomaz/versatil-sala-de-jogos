@@ -1,16 +1,36 @@
-# PROTÓTIPO SALA DE JOGOS VERSÁTIL v0.16
+# PROTÓTIPO SALA DE JOGOS VERSÁTIL v0.17
 
-Apenas a Batalha Naval foi refinada.
+## Poker — replay e apostas fictícias
 
-Alterações:
+Foi corrigido o fluxo de `Jogar de novo` depois de vencer uma mão.
 
-1. Tabuleiro em azul bem clarinho.
-2. Os navios aparecem como objetos sobre o tabuleiro, mantendo a água visível ao redor.
-3. Tiro que acerta somente água mostra uma gota azul mais escura.
-4. A parte do navio atingida fica vermelha.
-5. No campo adversário:
-   - erro na água = gota azul;
-   - acerto = posição vermelha.
-6. Os navios do adversário continuam ocultos até serem atingidos.
+O pot não é editado diretamente, porque no poker ele é consequência das apostas. Em vez disso, agora o jogador pode:
+- `Mesa / Check`, quando não há valor a pagar;
+- `Pagar para ver`, quando existe uma aposta atual;
+- `Aumentar`, escolhendo um valor;
+- `All in`, usando todas as fichas fictícias disponíveis;
+- `Desistir`.
 
-Os demais jogos, placares, cores, pareamento e Poker +18 permanecem inalterados.
+Todas as fichas continuam sendo exclusivamente fictícias (`play money`), sem valor real, prêmio, depósito ou retirada.
+
+Ao iniciar uma nova mão:
+- as cartas são redistribuídas;
+- o placar permanece;
+- as fichas fictícias remanescentes permanecem;
+- blinds fictícios de 10 fichas são recolocados;
+- quem ficar com menos de 10 fichas recebe nova carga fictícia de 1000 para manter a simulação recreativa.
+
+## Batalha Naval — frota nova
+
+Cada jogador agora possui exatamente 5 embarcações, todas ocupando somente 1 casa:
+- 2 caravelas;
+- 2 submarinos;
+- 1 caiaque.
+
+Cada embarcação aparece sobre uma única casa do próprio tabuleiro.
+Ao atacar:
+- água = gota azul;
+- embarcação atingida = a casa/embarcação fica vermelha;
+- vence quem atingir as 5 embarcações do adversário.
+
+Os demais jogos e o aviso +18 do Poker foram preservados.
