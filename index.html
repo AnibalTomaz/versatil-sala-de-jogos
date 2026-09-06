@@ -1,1 +1,135 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><meta http-equiv="Pragma" content="no-cache"><meta http-equiv="Expires" content="0"><title>Versátil • Sala de Jogos v0.12 Online</title><link rel="stylesheet" href="styles.css?v=0.12"></head><body><header class="topbar"><div><div class="brand">SERVIÇOS VERSÁTIL</div><div class="sub">Sala de Jogos • Protótipo online v0.12</div></div><div id="connBadge" class="badge">Conectando…</div></header><main class="wrap"><section id="homeView" class="card"><h1>Sala de Jogos</h1><p class="lead">Seu nick automático temporário. O sistema tenta encontrar outro jogador pela internet e, se ninguém estiver disponível, entra um jogador virtual.</p><label for="nick">Seu nick</label><div class="row"><input id="nick" maxlength="18" value="Gerando…" autocomplete="off" readonly aria-readonly="true"></div><div class="games"><button id="playTTT" class="game active" disabled><span class="gameIcon">✕○</span><span><strong>Jogo da Velha</strong><small>ONLINE</small></span></button><button class="game disabled" disabled><span class="gameIcon">●●</span><span><strong>Quatro em Linha</strong><small>PRÓXIMA ETAPA</small></span></button><button class="game disabled" disabled><span class="gameIcon">⚓</span><span><strong>Batalha Naval</strong><small>PRÓXIMA ETAPA</small></span></button><button class="game disabled" disabled><span class="gameIcon">♟</span><span><strong>Xadrez</strong><small>PRÓXIMA ETAPA</small></span></button><button class="game disabled" disabled><span class="gameIcon">♠</span><span><strong>Poker</strong><small>DEPOIS</small></span></button></div><div class="notice"><strong>Teste real:</strong> abra este protótipo em dois aparelhos diferentes. Com dois jogadores na fila, eles devem formar uma partida. Sem adversário, o bot entra após alguns segundos.</div></section><section id="queueView" class="card hidden"><h2>Procurando adversário…</h2><div class="spinner"></div><p id="queueMsg">Entrando na fila online.</p><button id="cancelQueue" class="secondary">Cancelar</button></section><section id="gameView" class="card hidden"><div class="gameHeader"><div><h2>Jogo da Velha</h2><div id="matchInfo" class="muted hidden" aria-hidden="true"></div></div><button id="leaveGame" class="secondary">Voltar à Sala</button></div><div class="players"><div id="meBox" class="playerBox"></div><div class="versus">×</div><div id="oppBox" class="playerBox"></div></div><div id="status" class="status">Aguardando…</div><div id="board" class="board"></div></section></main><div id="endModal" class="modal hidden"><div class="modalCard"><h2 id="endTitle">Partida terminada</h2><p id="endText"></p><div class="modalActions"><button id="rematchBtn">Jogar de novo</button><button id="backBtn" class="secondary">Voltar à Sala de Jogos</button></div></div></div><script type="module" src="app.js?v=0.12"></script></body></html>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>Versátil • Sala de Jogos v0.13 Online</title>
+<link rel="stylesheet" href="styles.css?v=0.13">
+</head>
+<body>
+<header class="topbar">
+  <div>
+    <div class="brand">SERVIÇOS VERSÁTIL</div>
+    <div class="sub">Sala de Jogos • Protótipo online v0.13</div>
+  </div>
+  <div id="connBadge" class="badge">Conectando…</div>
+</header>
+
+<main class="wrap">
+<section id="homeView" class="card">
+  <h1>Sala de Jogos</h1>
+  <p class="lead">Seu nick é temporário e criado automaticamente. O sistema procura outro jogador online e, quando necessário, completa a partida com jogador virtual.</p>
+
+  <label for="nick">Seu nick</label>
+  <div class="row">
+    <input id="nick" value="Gerando…" readonly aria-readonly="true">
+  </div>
+
+  <div class="games">
+    <button id="playTTT" class="game active" disabled data-game="tictactoe">
+      <span class="gameIcon">✕○</span><span><strong>Jogo da Velha</strong><small>ONLINE</small></span>
+    </button>
+    <button id="playC4" class="game active" disabled data-game="connect4">
+      <span class="gameIcon">●●</span><span><strong>Quatro em Linha</strong><small>ONLINE</small></span>
+    </button>
+    <button id="playBattle" class="game active" disabled data-game="battleship">
+      <span class="gameIcon">⚓</span><span><strong>Batalha Naval</strong><small>ONLINE</small></span>
+    </button>
+    <button id="playChess" class="game active" disabled data-game="chess">
+      <span class="gameIcon">♟</span><span><strong>Xadrez</strong><small>ONLINE</small></span>
+    </button>
+    <button id="playPoker" class="game active pokerGame" disabled data-game="poker">
+      <span class="gameIcon">♠</span><span><strong>Poker — Texas Hold’em (+18)</strong><small>RECREATIVO • PLAY MONEY</small></span>
+    </button>
+  </div>
+
+  <div class="notice">
+    <strong>Partidas online:</strong> adversários humanos têm prioridade. Quando não houver outro jogador disponível, entra um jogador virtual.
+  </div>
+</section>
+
+<section id="queueView" class="card hidden">
+  <h2 id="queueTitle">Procurando adversário…</h2>
+  <div class="spinner"></div>
+  <p id="queueMsg">Entrando na fila online.</p>
+  <button id="cancelQueue" class="secondary">Cancelar</button>
+</section>
+
+<section id="gameView" class="card hidden">
+  <div class="gameHeader">
+    <div>
+      <h2 id="gameTitle">Jogo</h2>
+      <div id="matchInfo" class="muted hidden" aria-hidden="true"></div>
+    </div>
+    <button id="leaveGame" class="secondary">Voltar à Sala</button>
+  </div>
+
+  <div id="playersArea" class="players">
+    <div id="meBox" class="playerBox playerBlue"></div>
+    <div class="versus">×</div>
+    <div id="oppBox" class="playerBox playerRed"></div>
+  </div>
+
+  <div id="status" class="status">Aguardando…</div>
+  <div id="board" class="board"></div>
+  <div id="extraGameArea"></div>
+</section>
+</main>
+
+<div id="endModal" class="modal hidden">
+  <div class="modalCard">
+    <h2 id="endTitle">Partida terminada</h2>
+    <p id="endText"></p>
+    <div class="modalActions">
+      <button id="rematchBtn">Jogar de novo</button>
+      <button id="backBtn" class="secondary">Voltar à Sala de Jogos</button>
+    </div>
+  </div>
+</div>
+
+<div id="pokerGate" class="modal hidden">
+  <div class="modalCard legalCard">
+    <h2>Poker — Texas Hold’em (+18)</h2>
+    <div class="legalText">
+      <h3>Aviso Legal – Jogo de Poker Recreativo Gratuito</h3>
+
+      <p><strong>1. Natureza 100% Recreativa e Gratuita</strong><br>
+      Este jogo é uma plataforma de simulação de poker destinada <strong>exclusivamente ao entretenimento</strong>. O acesso é totalmente gratuito e não há qualquer tipo de cobrança, assinatura ou venda de itens dentro do site.</p>
+
+      <p><strong>2. Sem Valor Real ou Prêmios</strong><br>
+      Todas as fichas, pontos ou placares utilizados nas partidas são meramente virtuais e <strong>não possuem valor financeiro ou comercial real</strong>. Eles não podem ser convertidos, trocados ou resgatados por dinheiro real, prêmios físicos, bens ou serviços de qualquer natureza.</p>
+
+      <p><strong>3. Inexistência de Apostas e Retiradas</strong><br>
+      A plataforma <strong>não permite, não apoia e não realiza apostas em dinheiro real</strong>. Não é possível depositar fundos nem retirar valores do jogo. Trata-se de um ambiente puramente de "dinheiro fictício" (<em>play money</em>).</p>
+
+      <p><strong>4. Sem Relação com Jogos de Azar Reais</strong><br>
+      A prática ou o sucesso obtido neste jogo de simulação <strong>não garante e não implica em sucesso futuro em jogos de poker com dinheiro real</strong> ou em qualquer outra modalidade de apostas e jogos de azar reais.</p>
+
+      <hr>
+
+      <p><strong>5. Classificação Indicativa</strong><br>
+      Embora não envolva apostas reais, o jogo simula a mecânica do poker, sendo recomendado para maiores de <strong>18+</strong> anos, de acordo com as diretrizes de classificação das lojas de aplicativos.</p>
+    </div>
+
+    <label class="checkLine">
+      <input id="pokerAgree" type="checkbox">
+      <span>Li e me declaro ciente!</span>
+    </label>
+
+    <label for="birthDate">Data de nascimento</label>
+    <input id="birthDate" type="date" autocomplete="bday">
+    <div id="ageMsg" class="ageMsg"></div>
+
+    <div class="modalActions legalActions">
+      <button id="enterPoker">Entrar na mesa</button>
+      <button id="cancelPoker" class="secondary">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="app.js?v=0.13"></script>
+</body>
+</html>

@@ -1,39 +1,40 @@
-# PROTÓTIPO SALA DE JOGOS VERSÁTIL v0.12
+# PROTÓTIPO SALA DE JOGOS VERSÁTIL v0.13 — DEMAIS JOGOS + POKER (+18)
 
-Revisão dos sintomas observados na v0.11.
+Esta versão expande a Sala de Jogos para:
 
-## 1. `Jogar de novo` — corrigido para um clique por jogador
-A causa foi identificada: depois do primeiro clique, o voto de revanche atualizava o Firebase,
-mas a atualização da sala ainda continha o resultado da partida. O `render()` reabria o modal,
-dando a impressão de que era necessário clicar novamente.
+- Jogo da Velha
+- Quatro em Linha
+- Batalha Naval
+- Xadrez
+- Poker — Texas Hold’em (+18)
 
-Agora:
-- cada jogador humano clica `Jogar de novo` apenas UMA vez;
-- depois do clique, o modal permanece fechado;
-- aparece `Aguardando o adversário aceitar jogar de novo…`;
-- quando o segundo jogador clicar uma vez, a nova rodada começa automaticamente nos dois aparelhos;
-- o placar é preservado;
-- contra jogador virtual, a revanche continua imediata com um único clique.
+## Regra visual e placar
+Nos jogos de dois participantes:
+- usuário/lado azul;
+- adversário/lado vermelho;
+- placar de vitórias abaixo de cada nick;
+- o placar permanece ao usar `Jogar de novo` com os mesmos oponentes;
+- empate não soma ponto.
 
-## 2. Cores no PC — cache e renderização corrigidos
-A v0.11 atualizava o `app.js`, mas o `styles.css` ainda podia ser reutilizado do cache pelo navegador do PC.
+O código interno da sala permanece oculto.
 
-Agora:
-- `styles.css?v=0.12`;
-- `app.js?v=0.12`;
-- instruções de no-cache na página;
-- X azul e O vermelho também são aplicados diretamente pelo JavaScript;
-- regras CSS usam prioridade para manter as cores inclusive em casas desabilitadas.
+## Poker — Texas Hold’em (+18)
+Antes de entrar na mesa, o usuário recebe o Aviso Legal fornecido e precisa:
+1. marcar `Li e me declaro ciente!`;
+2. informar a data de nascimento;
+3. clicar `Entrar na mesa`;
+4. ter 18 anos completos ou mais.
 
-Cores:
-- X = azul `#1565c0`
-- O = vermelho `#d32f2f`
+A data de nascimento é usada somente para validação local do acesso e não é gravada no Firebase.
 
-## 3. Revisão preservada
-- placar abaixo de cada nick;
-- vitória soma 1;
-- empate não altera placar;
-- código da sala continua oculto;
-- nick automático SHV001–SHV999;
-- sem edição humana do nick;
-- pareamento humano e jogador virtual preservados.
+O poker desta versão:
+- é recreativo e gratuito;
+- usa apenas fichas fictícias;
+- não tem depósito, retirada, dinheiro real ou prêmio;
+- mostra 4 lugares;
+- tenta primeiro encontrar outro participante humano e completa os lugares restantes com jogadores virtuais;
+- preserva placar entre os mesmos participantes;
+- usa uma simulação Texas Hold’em com cartas fechadas, flop, turn, river e avaliação automática no showdown.
+
+## Observação de protótipo
+As regras atuais do Firebase continuam as regras amplas de prototipagem já usadas nas versões anteriores. Antes de produção, devem ser endurecidas para restringir escrita/leitura às salas e participantes corretos.
