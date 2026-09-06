@@ -1,29 +1,23 @@
-# PROTÓTIPO SALA DE JOGOS VERSÁTIL v0.7 — PAREAMENTO SINCRONIZADO
+# PROTÓTIPO SALA DE JOGOS VERSÁTIL v0.9 — NICK SHV AUTOMÁTICO
 
-Correção do sintoma observado na v0.6:
-- PC entrava rapidamente na partida humano × humano.
-- Celular demorava para receber a partida e podia disparar o fallback para jogador virtual.
+Alteração solicitada:
 
-## Causa
-Na v0.6, o criador da sala entrava imediatamente, mas o segundo jogador dependia de nova varredura/polling para descobrir a sala. Em celular/rede mais lenta, o timer do bot podia vencer essa corrida.
+- o usuário não pode mais escrever ou editar o próprio nick;
+- não existe botão para escolher/alterar nick;
+- o sistema gera automaticamente um nick no formato `SHV001`;
+- `SHV` é sempre fixo;
+- somente os três números finais são randômicos (`001` a `999`);
+- a cada novo acesso/carregamento é atribuído um novo nick;
+- nicks já reservados por outro usuário são simplesmente ignorados e nunca são apresentados como opção;
+- não há mensagem dizendo que determinado nick já está em uso;
+- a reserva é feita atomicamente no Firebase para impedir duplicidade simultânea;
+- a reserva é removida na desconexão.
 
-## Correção v0.7
-- cada jogador passa a ouvir em tempo real sua própria entrada de fila;
-- o criador da sala marca as DUAS filas como `matched` e grava `roomId`;
-- o segundo aparelho recebe o `roomId` por listener em tempo real;
-- o timer do bot é cancelado assim que a fila fica `matched`;
-- antes de criar bot, o cliente verifica novamente se já existe pareamento humano;
-- cada cliente só remove a própria fila depois de validar e entrar na sala;
-- o tempo de fallback foi ampliado de ~8 para ~12 segundos para dar margem a redes móveis;
-- sessão e nick continuam vinculados ao pareamento atual.
+Exemplo:
+`SHV037`
+`SHV412`
+`SHV908`
 
-## Teste esperado
-PC: `Tucano27`
-Celular: `Atlas15`
+O pareamento humano e o fallback para jogador virtual da v0.8 foram preservados.
 
-Ao entrar quase simultaneamente:
-- PC deve mostrar `Atlas15` — Jogador online.
-- Celular deve mostrar `Tucano27` — Jogador online.
-- nenhum dos dois deve trocar para jogador virtual depois que a sala humana for criada.
-
-Protótipo isolado; não contém `data.json` e não altera o APP Versátil oficial.
+Não contém `data.json` e não altera o APP Versátil oficial.
