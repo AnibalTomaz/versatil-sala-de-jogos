@@ -14,11 +14,83 @@ const firebaseConfig={
 
 const fb=initializeApp(firebaseConfig),auth=getAuth(fb),db=getDatabase(fb);
 const $=s=>document.querySelector(s);
+
+const BANNER_KEY='versatil_game_banners_v020';
+function loadBanners(){
+  try{return (JSON.parse(localStorage.getItem(BANNER_KEY)||'[]')||[]).filter(Boolean).slice(0,6)}
+  catch{return []}
+}
+function saveBanners(arr){localStorage.setItem(BANNER_KEY,JSON.stringify(arr.slice(0,6)))}
+function pickBannerIndex(forceDifferent=true){
+  const arr=loadBanners();if(!arr.length)return -1;
+  if(arr.length===1)return 0;
+  let idx=Math.floor(Math.random()*arr.length);
+  if(forceDifferent&&idx===currentBannerIndex)idx=(idx+1+Math.floor(Math.random()*(arr.length-1)))%arr.length;
+  return idx;
+}
+function applyBanner(el,idx){
+  const arr=loadBanners();
+  if(!el||idx<0||!arr[idx]){if(el){el.classList.add('hidden');el.style.backgroundImage=''}return}
+  el.style.backgroundImage=`url("${arr[idx]}")`;el.classList.remove('hidden');
+}
+function showAccessBanner(){
+  currentBannerIndex=pickBannerIndex(true);
+  applyBanner($('#homeBanner'),currentBannerIndex);
+  applyBanner($('#gameBanner'),currentBannerIndex);
+}
+function startGameBannerRotation(){
+  clearInterval(bannerRotateTimer);
+  applyBanner($('#gameBanner'),currentBannerIndex);
+  if(loadBanners().length>1)bannerRotateTimer=setInterval(()=>{
+    currentBannerIndex=pickBannerIndex(true);applyBanner($('#gameBanner'),currentBannerIndex);
+  },60000);
+}
+function stopGameBannerRotation(){clearInterval(bannerRotateTimer);bannerRotateTimer=null}
+function renderBannerAdmin(){
+  const root=$('#bannerSlots');if(!root)return;
+  const stored=loadBanners(),six=Array.from({length:6},(_,i)=>stored[i]||'');
+  root.innerHTML='';
+  six.forEach((src,i)=>{
+    const box=document.createElement('div');box.className='bannerSlot';
+    box.innerHTML=`<div class="bannerSlotTop"><strong>Banner ${i+1}</strong><span>1200 × 340 px</span></div>
+      <div class="bannerPreview" id="bannerPreview${i}">${src?'':'Nenhuma imagem carregada'}</div>
+      <input type="file" accept="image/*" data-banner="${i}">
+      <button type="button" class="secondary" data-remove-banner="${i}">Remover</button>`;
+    root.appendChild(box);
+    if(src)$('#bannerPreview'+i).style.backgroundImage=`url("${src}")`;
+  });
+  root.querySelectorAll('input[type=file]').forEach(inp=>inp.onchange=e=>{
+    const file=e.target.files?.[0];if(!file)return;
+    const rd=new FileReader();rd.onload=()=>{
+      const arr=Array.from({length:6},(_,j)=>loadBanners()[j]||'');arr[Number(inp.dataset.banner)]=rd.result;
+      saveBanners(arr);renderBannerAdmin();showAccessBanner();
+    };rd.readAsDataURL(file);
+  });
+  root.querySelectorAll('[data-remove-banner]').forEach(btn=>btn.onclick=()=>{
+    const idx=Number(btn.dataset.removeBanner),arr=Array.from({length:6},(_,j)=>loadBanners()[j]||'');
+    arr[idx]='';saveBanners(arr);renderBannerAdmin();showAccessBanner();
+  });
+}
+function startQueueCountdown(){
+  clearInterval(queueCountdownTimer);
+  const el=$('#queueCountdown');if(!el)return;
+  const started=Date.now(),total=Math.ceil(BOT_WAIT_MS/1000);
+  el.textContent=total;
+  queueCountdownTimer=setInterval(()=>{
+    const left=Math.max(0,total-Math.floor((Date.now()-started)/1000));
+    el.textContent=left;
+    if(left<=0)clearInterval(queueCountdownTimer);
+  },250);
+}
+function stopQueueCountdown(){clearInterval(queueCountdownTimer);queueCountdownTimer=null}
+
 const BOT_WAIT_MS=15000,QUEUE_MAX_AGE_MS=45000;
 const GAME_NAMES={tictactoe:'Jogo da Velha',connect4:'Quatro em Linha',battleship:'Batalha Naval',chess:'Xadrez',poker:'Poker — Texas Hold’em (+18)'};
 
 let uid=null,nick='',nickKey='',sessionId='',gameKey='',roomId=null,room=null;
 let matching=false,enteringRoom=false,botTimer=null,seekTimer=null,roomUnsub=null,assignUnsub=null;
+let statsPageSession='',statsDisconnectHandle=null,statsRoundSeen='';
+let queueCountdownTimer=null,bannerRotateTimer=null,currentBannerIndex=-1;
 let chessSelected=null,pokerAgeApproved=false;
 
 const views=[$('#homeView'),$('#queueView'),$('#gameView')];
@@ -30,6 +102,87 @@ function clearSeek(){if(seekTimer){clearTimeout(seekTimer);seekTimer=null}}
 function scheduleSeek(ms=700){clearSeek();seekTimer=setTimeout(seekOpponent,ms)}
 function qRef(id=uid){return ref(db,`queues/${gameKey}/${id}`)}
 function assignmentRef(id=uid){return ref(db,`queues/assignments/${gameKey}/${id}`)}
+
+function statsSafeId(v){return String(v||'').replace(/[.#$\[\]\/]/g,'_')}
+function statsNow(){return Date.now()}
+function statsRound(r=room){return Math.max(1,Number(r?.round||1))}
+function statsMode(r=room){
+  const humans=Object.values(r?.players||{}).filter(p=>p?.type==='human').length;
+  return humans>=2?'human_vs_human':'human_vs_virtual';
+}
+function statsHumanCount(r=room){return Object.values(r?.players||{}).filter(p=>p?.type==='human').length}
+function statsVirtualCount(r=room){return Object.values(r?.players||{}).filter(p=>p?.type==='bot').length}
+async function statsWriteOnce(path,data){
+  if(!uid)return;
+  try{await runTransaction(ref(db,path),cur=>cur||data)}
+  catch(e){console.warn('Estatística não gravada:',path,e?.message||e)}
+}
+async function statsRecordRoomEntry(){
+  if(!uid)return;
+  if(!statsPageSession)statsPageSession=`${Date.now()}_${Math.random().toString(36).slice(2,9)}`;
+  await statsWriteOnce(`statistics/entries/${uid}/${statsSafeId(statsPageSession)}`,{
+    type:'room_entry',uid,createdAt:statsNow(),source:'sala_de_jogos',version:'0.19'
+  });
+}
+async function statsRecordMatchStart(r=room){
+  if(!roomId||!r)return;
+  const round=statsRound(r),rid=statsSafeId(roomId);
+  await statsWriteOnce(`statistics/matches/${rid}/${round}`,{
+    type:'match',roomId,round,game:r.game,mode:statsMode(r),
+    humanPlayers:statsHumanCount(r),virtualPlayers:statsVirtualCount(r),
+    startedAt:statsNow(),status:'active',version:'0.19'
+  });
+  statsRoundSeen=`${roomId}|${round}`;
+  await statsArmAbandonment(r);
+}
+async function statsMarkMatchFinished(r=room){
+  if(!roomId||!r?.winner)return;
+  const round=statsRound(r),rid=statsSafeId(roomId);
+  try{
+    await runTransaction(ref(db,`statistics/matches/${rid}/${round}`),cur=>{
+      const base=cur||{
+        type:'match',roomId,round,game:r.game,mode:statsMode(r),
+        humanPlayers:statsHumanCount(r),virtualPlayers:statsVirtualCount(r),
+        startedAt:statsNow(),version:'0.19'
+      };
+      if(base.finishedAt)return base;
+      return {...base,status:'completed',winner:r.winner,finishedAt:statsNow()};
+    });
+  }catch(e){console.warn('Final de partida não gravado',e?.message||e)}
+  await statsDisarmAbandonment();
+}
+async function statsRecordAbandonment(r=room,reason='leave'){
+  if(!uid||!roomId||!r||r.winner)return;
+  const round=statsRound(r),rid=statsSafeId(roomId);
+  await statsWriteOnce(`statistics/abandonments/${rid}/${round}/${uid}`,{
+    type:'abandonment',uid,roomId,round,game:r.game,mode:statsMode(r),
+    reason,createdAt:statsNow(),version:'0.19'
+  });
+}
+async function statsArmAbandonment(r=room){
+  await statsDisarmAbandonment();
+  if(!uid||!roomId||!r||r.winner)return;
+  const round=statsRound(r),rid=statsSafeId(roomId);
+  try{
+    statsDisconnectHandle=onDisconnect(ref(db,`statistics/abandonments/${rid}/${round}/${uid}`));
+    await statsDisconnectHandle.set({
+      type:'abandonment',uid,roomId,round,game:r.game,mode:statsMode(r),
+      reason:'disconnect',createdAt:statsNow(),version:'0.19'
+    });
+  }catch(e){statsDisconnectHandle=null;console.warn('onDisconnect estatístico indisponível',e?.message||e)}
+}
+async function statsDisarmAbandonment(){
+  const h=statsDisconnectHandle;statsDisconnectHandle=null;
+  if(h){try{await h.cancel()}catch{}}
+}
+async function statsRecordPokerFold(r=room,seat=''){
+  if(!uid||!roomId||!r||r.game!=='poker')return;
+  const round=statsRound(r),rid=statsSafeId(roomId);
+  await statsWriteOnce(`statistics/pokerFolds/${rid}/${round}/${uid}`,{
+    type:'poker_fold',uid,roomId,round,seat,createdAt:statsNow(),version:'0.19'
+  });
+}
+
 function nickRef(key=nickKey){return ref(db,'queues/nickReservations/'+key)}
 function sideOf(r){
   if(r?.players?.blue?.uid===uid&&r?.players?.blue?.sessionId===sessionId)return 'blue';
@@ -54,6 +207,7 @@ async function boot(){
     await assignFreshAutomaticNick();
     $('#connBadge').textContent='Firebase online';
     buttons.forEach(b=>b.disabled=false);
+    statsRecordRoomEntry();
   }catch(e){
     console.error(e); $('#nick').value='Indisponível'; $('#connBadge').textContent='Falha na conexão';
   }
@@ -90,7 +244,7 @@ async function assignFreshAutomaticNick(){
 }
 
 function initialGameState(key,blue,red){
-  const base={game:key,status:'active',createdAt:Date.now(),players:{blue,red},score:{blue:0,red:0},winner:'',rematch:{}};
+  const base={game:key,status:'active',createdAt:Date.now(),round:1,players:{blue,red},score:{blue:0,red:0},winner:'',rematch:{}};
   if(key==='tictactoe')return {...base,board:Array(9).fill(''),turn:'blue'};
   if(key==='connect4')return {...base,board:Array(42).fill(''),turn:'blue'};
   if(key==='battleship'){
@@ -134,6 +288,7 @@ async function startGame(key){
   await set(ref(db,'players/'+uid),{nick,nickKey,lastSeen:serverTimestamp(),sessionId});
   try{await remove(assignmentRef())}catch{}
   show($('#queueView'));$('#queueTitle').textContent='Procurando adversário…';$('#queueMsg').textContent=`Entrando na fila de ${GAME_NAMES[key]}.`;
+  startQueueCountdown();
   await set(qRef(),{uid,nick,sessionId,createdAt:Date.now(),status:'waiting'});
   onDisconnect(qRef()).remove();onDisconnect(assignmentRef()).remove();
   listenAssignment();seekOpponent();
@@ -189,14 +344,20 @@ async function makeBotOpponent(){
 
 async function enter(rid){
   if(!rid||enteringRoom||roomId===rid)return;
-  enteringRoom=true;clearTimeout(botTimer);clearSeek();
+  enteringRoom=true;clearTimeout(botTimer);clearSeek();stopQueueCountdown();startGameBannerRotation();
   const rs=await get(ref(db,'rooms/'+rid)),rv=rs.val();
   if(!rv||!Object.values(rv.players||{}).some(p=>p?.uid===uid&&p?.sessionId===sessionId)){enteringRoom=false;return}
   roomId=rid;gameKey=rv.game;matching=false;show($('#gameView'));$('#gameTitle').textContent=GAME_NAMES[gameKey];$('#matchInfo').textContent='';
+  statsRecordMatchStart(rv);
   stopAssignmentListener();
   if(roomUnsub)roomUnsub();
   roomUnsub=onValue(ref(db,'rooms/'+rid),s=>{
-    if(!s.exists())return;room=s.val();renderGame();maybeBotMove();maybeStartHumanRematch(room);
+    if(!s.exists())return;
+    room=s.val();
+    const sr=`${roomId}|${statsRound(room)}`;
+    if(sr!==statsRoundSeen)statsRecordMatchStart(room);
+    if(room?.winner)statsMarkMatchFinished(room);
+    renderGame();maybeBotMove();maybeStartHumanRematch(room);
   });
   enteringRoom=false;
 }
@@ -782,6 +943,7 @@ function renderPoker(){
   else $('#endModal').classList.add('hidden');
 }
 async function pokerBetAction(action){
+  const statsFoldRequested=action==='fold';
   if(!roomId||!room||room.winner)return;
   const side=sideOf(room);
   if(!side||room.folded?.[side])return;
@@ -842,6 +1004,8 @@ async function pokerBetAction(action){
     r.updatedAt=Date.now();
     return r;
   });
+  if(statsFoldRequested)statsRecordPokerFold(room,side);
+
 }
 
 async function pokerNextStage(){
@@ -918,19 +1082,19 @@ async function maybeStartHumanRematch(r){
 }
 function resetForRematch(r){
   const keepScore=r.score,keepPlayers=r.players,keepChips=r.chips;
-  if(r.game==='tictactoe')return {...r,board:Array(9).fill(''),turn:'blue',winner:'',rematch:{},score:keepScore,updatedAt:Date.now()};
-  if(r.game==='connect4')return {...r,board:Array(42).fill(''),turn:'blue',winner:'',rematch:{},score:keepScore,updatedAt:Date.now()};
+  if(r.game==='tictactoe')return {...r,round:statsRound(r)+1,board:Array(9).fill(''),turn:'blue',winner:'',rematch:{},score:keepScore,updatedAt:Date.now()};
+  if(r.game==='connect4')return {...r,round:statsRound(r)+1,board:Array(42).fill(''),turn:'blue',winner:'',rematch:{},score:keepScore,updatedAt:Date.now()};
   if(r.game==='battleship'){
     const blueFleet=makeFleet(),redFleet=makeFleet();
-    return {...r,
+    return {...r,round:statsRound(r)+1,
       ships:{blue:blueFleet,red:redFleet},
       shipTypes:{blue:makeFleetTypes(blueFleet),red:makeFleetTypes(redFleet)},
       shots:{blue:[],red:[]},turn:'blue',winner:'',rematch:{},score:keepScore,updatedAt:Date.now()
     };
   }
-  if(r.game==='chess')return {...r,board:initialChessBoard(),turn:'blue',winner:'',rematch:{},score:keepScore,lastMove:null,updatedAt:Date.now()};
+  if(r.game==='chess')return {...r,round:statsRound(r)+1,board:initialChessBoard(),turn:'blue',winner:'',rematch:{},score:keepScore,lastMove:null,updatedAt:Date.now()};
   if(r.game==='poker'){
-    const base={...r,players:keepPlayers,score:keepScore,winner:'',winnerSeats:[],rematch:{}};
+    const base={...r,round:statsRound(r)+1,players:keepPlayers,score:keepScore,winner:'',winnerSeats:[],rematch:{}};
     const d=makeDeck(),holes={};
     Object.keys(keepPlayers).forEach(s=>holes[s]=[d.pop(),d.pop()]);
 
@@ -974,11 +1138,13 @@ async function rematch(){
   $('#status').textContent='Aguardando o adversário aceitar jogar de novo…';
 }
 async function back(){
-  clearTimeout(botTimer);clearSeek();matching=false;enteringRoom=false;chessSelected=null;
+  clearTimeout(botTimer);clearSeek();stopQueueCountdown();stopGameBannerRotation();matching=false;enteringRoom=false;chessSelected=null;
+  if(roomId&&room&&!room.winner)await statsRecordAbandonment(room,'leave');
+  await statsDisarmAbandonment();
   try{const q=await get(qRef());if(q.exists()&&q.val()?.sessionId===sessionId)await remove(qRef())}catch{}
   try{const a=await get(assignmentRef());if(a.exists()&&a.val()?.sessionId===sessionId)await remove(assignmentRef())}catch{}
   stopAssignmentListener();if(roomUnsub){roomUnsub();roomUnsub=null}
-  roomId=null;room=null;sessionId='';gameKey='';$('#endModal').classList.add('hidden');show($('#homeView'));
+  roomId=null;room=null;sessionId='';gameKey='';statsRoundSeen='';$('#endModal').classList.add('hidden');show($('#homeView'));
 }
 
 /* +18 POKER */
@@ -1024,6 +1190,12 @@ birthInput.addEventListener('keydown',e=>{
      !['Backspace','Delete','ArrowLeft','ArrowRight','Tab'].includes(e.key))e.preventDefault();
 });
 
+showAccessBanner();
+renderBannerAdmin();
+$('#toggleAdminBanners').onclick=()=>{
+  $('#adminBannerBody').classList.toggle('hidden');
+  $('#toggleAdminBanners').textContent=$('#adminBannerBody').classList.contains('hidden')?'Abrir configuração':'Fechar configuração';
+};
 $('#playTTT').onclick=()=>startGame('tictactoe');
 $('#playC4').onclick=()=>startGame('connect4');
 $('#playBattle').onclick=()=>startGame('battleship');

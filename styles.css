@@ -615,3 +615,52 @@ button.secondary{background:#fff;color:#185b91;border:1px solid #aac1d4}button:d
   .pokerOval{left:5%!important;right:5%!important}
   .pokerCenter{width:48%!important}
 }
+
+
+/* v0.20 — Sala de Jogos / banners / contador */
+.roomHero{display:grid;grid-template-columns:minmax(170px,1fr) minmax(260px,1.15fr);gap:18px;align-items:center}
+.roomTitleLine{display:flex;align-items:center;gap:10px}
+.roomIcon{width:42px;height:42px;object-fit:contain;border-radius:8px}
+.roomTitleLine h1{margin:0}
+.roomLead{margin-top:10px}
+.gameBanner{
+  aspect-ratio:1200/340;
+  width:100%;
+  border:1px solid #9fb7c8;
+  border-radius:4px;
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
+  overflow:hidden;
+}
+.gameBanner.hidden{display:none!important}
+.gameHeaderWithBanner{display:grid!important;grid-template-columns:minmax(105px,.65fr) minmax(230px,1.35fr) auto;gap:14px;align-items:center}
+.gameNameBlock h2{margin:0}
+.gameBannerInMatch{max-width:420px;justify-self:center}
+.countdownSpinner{position:relative;display:flex!important;align-items:center;justify-content:center}
+.countdownSpinner span{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:900;color:#0d4f7c;line-height:1
+}
+.adminBannerModel{margin-top:14px}
+.adminModelHead{display:flex;justify-content:space-between;gap:14px;align-items:center}
+.adminModelHead h2{margin:0 0 5px}
+.adminModelHead p{margin:0}
+.bannerSlots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}
+.bannerSlot{border:1px solid #cad9e3;border-radius:10px;padding:10px;background:#f7fafc}
+.bannerSlotTop{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:8px}
+.bannerPreview{aspect-ratio:1200/340;border:1px dashed #9fb7c8;border-radius:5px;background:#fff center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:#6b8191;font-size:12px}
+.bannerSlot input[type=file]{width:100%;margin-top:8px;font-size:12px}
+.bannerSlot button{margin-top:7px;padding:7px 10px;font-size:11px}
+
+@media(max-width:620px){
+  .roomHero{grid-template-columns:1fr;gap:10px}
+  .roomTitleLine{justify-content:flex-start}
+  .roomIcon{width:38px;height:38px}
+  .gameHeaderWithBanner{grid-template-columns:1fr auto;gap:9px}
+  .gameBannerInMatch{grid-column:1/-1;grid-row:2;width:100%;max-width:none}
+  .gameNameBlock{grid-column:1}
+  .gameHeaderWithBanner #leaveGame{grid-column:2;grid-row:1}
+  .bannerSlots{grid-template-columns:1fr}
+  .adminModelHead{align-items:flex-start;flex-direction:column}
+}

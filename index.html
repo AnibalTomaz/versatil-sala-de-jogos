@@ -6,22 +6,28 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Versátil • Sala de Jogos v0.18 Online</title>
-<link rel="stylesheet" href="styles.css?v=0.18">
+<title>Versátil • Sala de Jogos v0.20 Online</title>
+<link rel="stylesheet" href="styles.css?v=0.20">
 </head>
 <body>
 <header class="topbar">
   <div>
     <div class="brand">SERVIÇOS VERSÁTIL</div>
-    <div class="sub">Sala de Jogos • Protótipo online v0.18</div>
+    <div class="sub">Sala de Jogos • Protótipo online v0.20</div>
   </div>
   <div id="connBadge" class="badge">Conectando…</div>
 </header>
 
 <main class="wrap">
-<section id="homeView" class="card">
-  <h1>Sala de Jogos</h1>
-  <p class="lead">Seu nick é temporário e criado automaticamente. O sistema procura outro jogador online e, quando necessário, completa a partida com jogador virtual.</p>
+<section id="homeView" class="card gamesHome">
+  <div class="roomHero">
+    <div class="roomTitleLine">
+      <img src="sala-jogos-icon.jpg" class="roomIcon" alt="">
+      <h1>Sala de Jogos</h1>
+    </div>
+    <div id="homeBanner" class="gameBanner hidden" aria-label="Banner da Sala de Jogos"></div>
+  </div>
+  <p class="lead roomLead">Seu nick é temporário e criado automaticamente. O sistema procura outro jogador online e, quando necessário, completa a partida com jogador virtual.</p>
 
   <label for="nick">Seu nick</label>
   <div class="row">
@@ -53,17 +59,18 @@
 
 <section id="queueView" class="card hidden">
   <h2 id="queueTitle">Procurando adversário…</h2>
-  <div class="spinner"></div>
+  <div class="spinner countdownSpinner"><span id="queueCountdown">15</span></div>
   <p id="queueMsg">Entrando na fila online.</p>
   <button id="cancelQueue" class="secondary">Cancelar</button>
 </section>
 
 <section id="gameView" class="card hidden">
-  <div class="gameHeader">
-    <div>
+  <div class="gameHeader gameHeaderWithBanner">
+    <div class="gameNameBlock">
       <h2 id="gameTitle">Jogo</h2>
       <div id="matchInfo" class="muted hidden" aria-hidden="true"></div>
     </div>
+    <div id="gameBanner" class="gameBanner gameBannerInMatch hidden" aria-label="Banner da partida"></div>
     <button id="leaveGame" class="secondary">Voltar à Sala</button>
   </div>
 
@@ -76,6 +83,20 @@
   <div id="status" class="status">Aguardando…</div>
   <div id="board" class="board"></div>
   <div id="extraGameArea"></div>
+</section>
+
+<section id="adminBannerModel" class="card adminBannerModel">
+  <div class="adminModelHead">
+    <div>
+      <h2>Modelo Admin — Banners da Sala de Jogos</h2>
+      <p>Até 6 banners. Medida recomendada: <strong>1200 × 340 px</strong> (proporção aproximada 3,53:1).</p>
+    </div>
+    <button id="toggleAdminBanners" class="secondary">Abrir configuração</button>
+  </div>
+  <div id="adminBannerBody" class="hidden">
+    <div id="bannerSlots" class="bannerSlots"></div>
+    <p class="muted">Neste protótipo os arquivos ficam somente neste navegador. Na integração com o APP, estes 6 campos serão ligados à publicação do Admin.</p>
+  </div>
 </section>
 </main>
 
@@ -131,6 +152,6 @@
   </div>
 </div>
 
-<script type="module" src="app.js?v=0.18"></script>
+<script type="module" src="app.js?v=0.20"></script>
 </body>
 </html>

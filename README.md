@@ -1,30 +1,29 @@
-# PROTÓTIPO SALA DE JOGOS VERSÁTIL v0.18
+# SALA DE JOGOS VERSÁTIL v0.20 — MODELO DE INTEGRAÇÃO
 
-Correções desta versão:
+Esta versão apresenta o modelo solicitado antes da incorporação ao APP.
 
-1. Batalha Naval
-- removida a espera artificial do jogador virtual na Batalha Naval;
-- nenhum cronômetro ou limite de tempo;
-- tiro do bot escolhe sempre uma casa ainda não atacada;
-- proteção contra repetição/posição inválida que poderia interromper a sequência;
-- 5 embarcações de uma casa continuam mantidas.
+## Sala de Jogos
+- usa o ícone fornecido pelo usuário;
+- cabeçalho reorganizado;
+- banner no topo sem criar espaço vazio quando nenhum banner existir;
+- escolha randômica por acesso, evitando repetir a imagem anterior quando houver mais de uma.
 
-2. Poker — data de nascimento
-- entrada no formato DD/MM/AAAA;
-- aceita no máximo 8 algarismos;
-- ano fica obrigatoriamente limitado a quatro dígitos;
-- validação de data real e de 18 anos completos permanece local.
+## Banners
+Medida recomendada: **1200 × 340 px**.
+São previstos **6 banners**.
 
-3. Poker — mesa e ações
-- mesa reorganizada para não sobrepor controles;
-- as quatro posições continuam visíveis;
-- controles de aposta foram retirados do centro da mesa e colocados abaixo dela;
-- botão de progressão da mão fica separado, grande e visível: ABRIR FLOP, ABRIR TURN, ABRIR RIVER e MOSTRAR RESULTADO;
-- pot e cartas comunitárias permanecem no centro.
+No modelo Admin desta versão há seis posições de upload e remoção. Para permitir teste imediato sem mexer ainda no APP oficial, as imagens ficam no Local Storage deste navegador. Na integração definitiva, os mesmos seis campos serão ligados ao sistema de publicação do Admin.
 
-4. Celular
-- layout específico para telas até 620 px e refinamento até 390 px;
-- assentos, cartas e mesa reduzem proporcionalmente;
-- ações viram grade de duas colunas;
-- botão da etapa permanece em largura total;
-- Batalha Naval mantém toque direto.
+## Durante os jogos
+- o banner aparece também no cabeçalho da partida;
+- começa com o banner selecionado no acesso;
+- troca automaticamente a cada **60 segundos**;
+- somente banners efetivamente carregados participam da rotação.
+
+## Fila de adversário
+- contador regressivo aparece dentro do círculo de busca;
+- começa em 15 segundos, correspondente ao tempo atual de procura antes do jogador virtual;
+- não é limite de duração da partida; serve somente para mostrar a espera da fila.
+
+## Celular
+O cabeçalho, banner, jogos, fila e controles possuem regras responsivas específicas para telas menores.
