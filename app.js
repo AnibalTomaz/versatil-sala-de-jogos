@@ -263,7 +263,7 @@ async function seek(){
         X:{uid,nick,sessionId,type:'human'},
         O:{uid:o.uid,nick:o.nick,sessionId:o.sessionId,type:'human'}
       },
-      board:['','','','','','','','',''],turn:'X',winner:'',rematch:{}
+      board:['','','','','','','','',''],turn:'X',winner:'',score:{X:0,O:0},rematch:{}
     };
   });
 
@@ -322,7 +322,7 @@ async function makeBot(){
       X:{uid,nick,sessionId,type:'human'},
       O:{uid:'bot',nick:botNick,sessionId:'bot',type:'bot'}
     },
-    board:['','','','','','','','',''],turn:'X',winner:'',rematch:{}
+    board:['','','','','','','','',''],turn:'X',winner:'',score:{X:0,O:0},rematch:{}
   });
 
   await set(assignmentRef(),{uid,sessionId,roomId:rid,opponentUid:'bot',opponentNick:botNick,createdAt:Date.now()});
@@ -347,7 +347,7 @@ async function enter(rid){
   roomId=rid;
   matching=false;
   show($('#gameView'));
-  $('#matchInfo').textContent='Sala '+rid.slice(-10);
+  $('#matchInfo').textContent='';
 
   stopAssignmentListener();
 
@@ -363,15 +363,28 @@ async function enter(rid){
 
 function render(){
   const m=mine(room),o=opp(room),b=Array.isArray(room.board)?room.board:['','','','','','','','',''];
-  $('#meBox').innerHTML='<strong>'+nick+' ('+m+')</strong><small>Você</small>';
-  $('#oppBox').innerHTML='<strong>'+(o?.nick||'Adversário')+' ('+(m==='X'?'O':'X')+')</strong><small>'+(o?.type==='bot'?'Jogador virtual':'Jogador online')+'</small>';
+  const opponentMark=m==='X'?'O':'X';
+  const score=room.score||{X:0,O:0};
+
+  $('#meBox').innerHTML=
+    '<strong>'+nick+'</strong>'+
+    '<small>Você</small>'+
+    '<div class="scoreNumber" aria-label="Placar">'+(Number(score[m])||0)+'</div>';
+
+  $('#oppBox').innerHTML=
+    '<strong>'+(o?.nick||'Adversário')+'</strong>'+
+    '<small>'+(o?.type==='bot'?'Jogador virtual':'Jogador online')+'</small>'+
+    '<div class="scoreNumber" aria-label="Placar">'+(Number(score[opponentMark])||0)+'</div>';
+
   const el=$('#board');el.innerHTML='';
   b.forEach((v,i)=>{
     const bt=document.createElement('button');
-    bt.className='cell';bt.textContent=v;
+    bt.className='cell'+(v==='X'?' markX':v==='O'?' markO':'');
+    bt.textContent=v;
     bt.disabled=!!room.winner||room.turn!==m||!!v;
     bt.onclick=()=>move(i);el.appendChild(bt);
   });
+
   if(room.winner){
     const title=room.winner==='draw'?'Empate':room.winner===m?'Você venceu!':'Você perdeu!';
     $('#status').textContent=title;$('#endTitle').textContent=title;
@@ -387,7 +400,14 @@ async function move(i){
             r.players?.O?.uid===uid&&r.players?.O?.sessionId===sessionId?'O':'';
     if(!m||r.turn!==m||r.board[i])return r;
     const b=[...r.board];b[i]=m;r.board=b;
-    const w=win(b);if(w)r.winner=w;else r.turn=m==='X'?'O':'X';
+    const w=win(b);
+    if(w){
+      r.winner=w;
+      if(w!=='draw'){
+        r.score=r.score||{X:0,O:0};
+        r.score[w]=(Number(r.score[w])||0)+1;
+      }
+    }else r.turn=m==='X'?'O':'X';
     r.updatedAt=Date.now();return r;
   });
 }
@@ -410,7 +430,14 @@ function botMove(){
       const b=[...r.board],i=botPick(b,side,'X');
       if(i===undefined)return r;
       b[i]=side;r.board=b;
-      const w=win(b);if(w)r.winner=w;else r.turn='X';
+      const w=win(b);
+      if(w){
+        r.winner=w;
+        if(w!=='draw'){
+          r.score=r.score||{X:0,O:0};
+          r.score[w]=(Number(r.score[w])||0)+1;
+        }
+      }else r.turn='X';
       r.updatedAt=Date.now();return r;
     });
     botBusy=false;
@@ -420,6 +447,7 @@ function botMove(){
 async function rematch(){
   $('#endModal').classList.add('hidden');
   const o=opp(room);
+  // O placar NÃO é zerado: permanece enquanto forem os mesmos oponentes.
   if(o?.type==='bot')return update(ref(db,'rooms/'+roomId),{board:['','','','','','','','',''],turn:'X',winner:'',rematch:{},updatedAt:Date.now()});
   await set(ref(db,'rooms/'+roomId+'/rematch/'+uid),{sessionId,accepted:true});
   $('#status').textContent='Pedido de revanche enviado…';

@@ -1,16 +1,27 @@
-# PROTÓTIPO SALA DE JOGOS VERSÁTIL v0.10
+# PROTÓTIPO SALA DE JOGOS VERSÁTIL v0.11
 
-Correção do sintoma observado no PC na v0.9: versão visual atualizada, porém o botão do Jogo da Velha não respondia.
+Alterações desta versão:
 
-Mudanças:
-- os eventos dos botões são registrados antes da inicialização assíncrona do Firebase;
-- o botão Jogo da Velha começa desabilitado enquanto o nick está sendo criado;
-- o campo mostra `Gerando…`;
-- somente após `Firebase online` + nick SHV válido o botão é habilitado;
-- se a inicialização falhar, o botão permanece desabilitado e o campo mostra `Indisponível`;
-- `app.js?v=0.10` força o navegador a buscar o JavaScript desta versão e reduz problema de cache entre HTML novo e JS antigo;
-- nick continua automático, não editável, no formato SHV001–SHV999;
-- o nick do acesso imediatamente anterior no mesmo aparelho não é repetido;
-- nicks ocupados continuam sendo silenciosamente ignorados.
+1. **Placar entre os mesmos oponentes**
+   - cada jogador passa a ter um número de vitórias abaixo do próprio nick;
+   - vitória soma 1 ponto ao vencedor;
+   - empate não altera o placar;
+   - ao usar `Jogar de novo`, o placar é preservado enquanto os mesmos oponentes continuam na mesma disputa;
+   - funciona tanto humano × humano quanto humano × jogador virtual.
 
-O pareamento humano da v0.8/v0.9 foi preservado para novo teste depois desta correção de inicialização.
+2. **Código da sala suprimido**
+   - o identificador `Sala ...` não é mais mostrado abaixo de `Jogo da Velha`;
+   - o código continua existindo internamente no Firebase apenas para sincronização.
+
+3. **Cores das peças**
+   - `X` azul;
+   - `O` vermelho.
+
+Preservado:
+- nick automático `SHV001` a `SHV999`;
+- sem edição humana do nick;
+- nick ocupado é ignorado silenciosamente;
+- pareamento online;
+- fallback para jogador virtual;
+- mensagens `Você venceu!`, `Você perdeu!` e `Empate`;
+- revanche entre os mesmos oponentes.
