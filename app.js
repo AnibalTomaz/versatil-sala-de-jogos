@@ -30,8 +30,18 @@ function pickBannerIndex(forceDifferent=true){
 }
 function applyBanner(el,idx){
   const arr=loadBanners();
-  if(!el||idx<0||!arr[idx]){if(el){el.classList.add('hidden');el.style.backgroundImage=''}return}
-  el.style.backgroundImage=`url("${arr[idx]}")`;el.classList.remove('hidden');
+  if(!el)return;
+  const label=el.querySelector('span');
+  if(idx<0||!arr[idx]){
+    el.style.backgroundImage='';
+    el.classList.remove('hidden','hasImage');
+    el.classList.add('bannerPlaceholder');
+    if(label)label.textContent='BANNER RANDÔMICO';
+    return;
+  }
+  el.style.backgroundImage=`url("${arr[idx]}")`;
+  el.classList.remove('hidden','bannerPlaceholder');
+  el.classList.add('hasImage');
 }
 function showAccessBanner(){
   currentBannerIndex=pickBannerIndex(true);

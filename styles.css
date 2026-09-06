@@ -664,3 +664,134 @@ button.secondary{background:#fff;color:#185b91;border:1px solid #aac1d4}button:d
   .bannerSlots{grid-template-columns:1fr}
   .adminModelHead{align-items:flex-start;flex-direction:column}
 }
+
+
+/* =========================
+   v0.21 — relógio estático + banners sempre identificáveis no modelo
+   ========================= */
+
+/* O círculo continua animado; o número não pertence ao elemento rotacionado. */
+.countdownWrap{
+  position:relative;
+  width:48px;
+  height:48px;
+  margin:10px auto 14px;
+}
+.countdownWrap .countdownSpinner{
+  position:absolute;
+  inset:0;
+  margin:0!important;
+}
+.countdownNumber{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:3;
+  font-size:14px;
+  font-weight:900;
+  color:#0d4f7c;
+  line-height:1;
+  transform:none!important;
+  animation:none!important;
+  pointer-events:none;
+}
+
+/* Área de banner deve ser claramente visível mesmo antes do upload no protótipo. */
+.gameBanner{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:72px;
+  background-color:#b9e5f2;
+  color:#17324a;
+  font-weight:700;
+  letter-spacing:.4px;
+  text-align:center;
+}
+.gameBanner.bannerPlaceholder{
+  background-image:linear-gradient(90deg,#d8f2f7,#8ed7e8)!important;
+}
+.gameBanner.bannerPlaceholder span{
+  display:block;
+  padding:8px 12px;
+}
+.gameBanner.hasImage span{display:none}
+
+/* Sala de Jogos: título e ícone ficam compactos à esquerda; banner ocupa o bloco à direita. */
+.roomHero{
+  grid-template-columns:minmax(155px,.72fr) minmax(300px,1.45fr)!important;
+  align-items:center!important;
+}
+.roomTitleLine{
+  align-items:center!important;
+  align-self:center;
+}
+.roomTitleLine h1{
+  font-size:20px;
+  line-height:1.05;
+  max-width:110px;
+}
+.roomLead{
+  max-width:100%;
+  margin-top:8px!important;
+}
+
+/* Partidas: nome do jogo à esquerda, banner central, voltar à direita. */
+.gameHeaderWithBanner{
+  grid-template-columns:minmax(120px,.62fr) minmax(320px,1.55fr) auto!important;
+  align-items:center!important;
+  gap:12px!important;
+}
+.gameNameBlock{
+  min-width:0;
+}
+.gameNameBlock h2{
+  font-size:18px;
+  line-height:1.05;
+  white-space:normal;
+}
+.gameBannerInMatch{
+  width:100%!important;
+  max-width:460px!important;
+  justify-self:center;
+}
+.gameHeaderWithBanner #leaveGame{
+  align-self:start;
+}
+
+/* Tablet e celular */
+@media(max-width:760px){
+  .roomHero{
+    grid-template-columns:1fr!important;
+    gap:8px!important;
+  }
+  .roomTitleLine h1{max-width:none;font-size:20px}
+  .gameBanner{min-height:64px}
+  .gameHeaderWithBanner{
+    grid-template-columns:1fr auto!important;
+  }
+  .gameNameBlock{
+    grid-column:1;
+    grid-row:1;
+  }
+  .gameHeaderWithBanner #leaveGame{
+    grid-column:2;
+    grid-row:1;
+  }
+  .gameBannerInMatch{
+    grid-column:1/-1;
+    grid-row:2;
+    width:100%!important;
+    max-width:none!important;
+  }
+}
+
+@media(max-width:420px){
+  .roomTitleLine{gap:8px}
+  .roomIcon{width:34px!important;height:34px!important}
+  .roomTitleLine h1{font-size:18px}
+  .gameNameBlock h2{font-size:17px}
+  .gameBanner{min-height:58px}
+}

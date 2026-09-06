@@ -6,14 +6,14 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Versátil • Sala de Jogos v0.20 Online</title>
-<link rel="stylesheet" href="styles.css?v=0.20">
+<title>Versátil • Sala de Jogos v0.21 Online</title>
+<link rel="stylesheet" href="styles.css?v=0.21">
 </head>
 <body>
 <header class="topbar">
   <div>
     <div class="brand">SERVIÇOS VERSÁTIL</div>
-    <div class="sub">Sala de Jogos • Protótipo online v0.20</div>
+    <div class="sub">Sala de Jogos • Protótipo online v0.21</div>
   </div>
   <div id="connBadge" class="badge">Conectando…</div>
 </header>
@@ -25,7 +25,7 @@
       <img src="sala-jogos-icon.jpg" class="roomIcon" alt="">
       <h1>Sala de Jogos</h1>
     </div>
-    <div id="homeBanner" class="gameBanner hidden" aria-label="Banner da Sala de Jogos"></div>
+    <div id="homeBanner" class="gameBanner bannerPlaceholder" aria-label="Banner da Sala de Jogos"><span>BANNER RANDÔMICO</span></div>
   </div>
   <p class="lead roomLead">Seu nick é temporário e criado automaticamente. O sistema procura outro jogador online e, quando necessário, completa a partida com jogador virtual.</p>
 
@@ -59,7 +59,10 @@
 
 <section id="queueView" class="card hidden">
   <h2 id="queueTitle">Procurando adversário…</h2>
-  <div class="spinner countdownSpinner"><span id="queueCountdown">15</span></div>
+  <div class="countdownWrap" aria-label="Tempo de busca">
+    <div class="spinner countdownSpinner"></div>
+    <span id="queueCountdown" class="countdownNumber">15</span>
+  </div>
   <p id="queueMsg">Entrando na fila online.</p>
   <button id="cancelQueue" class="secondary">Cancelar</button>
 </section>
@@ -70,7 +73,7 @@
       <h2 id="gameTitle">Jogo</h2>
       <div id="matchInfo" class="muted hidden" aria-hidden="true"></div>
     </div>
-    <div id="gameBanner" class="gameBanner gameBannerInMatch hidden" aria-label="Banner da partida"></div>
+    <div id="gameBanner" class="gameBanner gameBannerInMatch bannerPlaceholder" aria-label="Banner da partida"><span>BANNER RANDÔMICO</span></div>
     <button id="leaveGame" class="secondary">Voltar à Sala</button>
   </div>
 
@@ -152,6 +155,6 @@
   </div>
 </div>
 
-<script type="module" src="app.js?v=0.20"></script>
+<script type="module" src="app.js?v=0.21"></script>
 </body>
 </html>
