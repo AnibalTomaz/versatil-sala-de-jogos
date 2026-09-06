@@ -306,22 +306,105 @@ function makeFleet(){
     }
   }return fleet.sort((a,b)=>a-b);
 }
+function warshipSegmentClass(fleet,index){
+  if(!fleet.includes(index))return '';
+  const r=Math.floor(index/8),c=index%8;
+  const left=c>0&&fleet.includes(index-1);
+  const right=c<7&&fleet.includes(index+1);
+  const up=r>0&&fleet.includes(index-8);
+  const down=r<7&&fleet.includes(index+8);
+
+  // Classificação visual aproximada do trecho do casco.
+  if((right&&!left)||(down&&!up))return 'warship3d warshipBow';
+  if((left&&!right)||(up&&!down))return 'warship3d warshipStern';
+  return 'warship3d warshipMid';
+}
+
 function renderBattleship(){
-  const side=sideOf(room),opp=otherSide(side),myFleet=room.ships?.[side]||[],myIncoming=room.shots?.[opp]||[],myShots=room.shots?.[side]||[],oppFleet=room.ships?.[opp]||[];
-  $('#status').textContent=room.winner?winnerText():room.turn===side?'Sua vez — escolha uma posição inimiga':'Vez do adversário';
-  $('#board').className='board';$('#board').innerHTML='';
-  const extra=$('#extraGameArea');extra.innerHTML='<div class="battleWrap"><div class="battlePanel"><h3>Seu mar — Azul</h3><div id="mySea" class="battleGrid"></div></div><div class="battlePanel"><h3>Mar adversário — Vermelho</h3><div id="enemySea" class="battleGrid"></div></div></div>';
+  const side=sideOf(room),opp=otherSide(side);
+  const myFleet=Array.isArray(room.ships?.[side])?room.ships[side]:[];
+  const myIncoming=Array.isArray(room.shots?.[opp])?room.shots[opp]:[];
+  const myShots=Array.isArray(room.shots?.[side])?room.shots[side]:[];
+  const oppFleet=Array.isArray(room.ships?.[opp])?room.ships[opp]:[];
+
+  $('#status').textContent=room.winner
+    ? winnerText()
+    : room.turn===side
+      ? 'Sua vez — clique em uma posição no mar adversário'
+      : 'Vez do adversário';
+
+  $('#board').className='board';
+  $('#board').innerHTML='';
+
+  const extra=$('#extraGameArea');
+  extra.innerHTML=
+    '<div class="battleWrap">'+
+      '<div class="battlePanel"><h3>Seu mar — Azul</h3><div id="mySea" class="battleGrid"></div><div class="battleLegend">Seus navios de guerra</div></div>'+
+      '<div class="battlePanel"><h3>Mar adversário — Vermelho</h3><div id="enemySea" class="battleGrid"></div><div class="battleLegend">Frota inimiga oculta até ser atingida</div></div>'+
+    '</div>';
+
   const my=$('#mySea'),enemy=$('#enemySea');
+
   for(let i=0;i<64;i++){
-    const a=document.createElement('button');a.className='battleCell '+(myFleet.includes(i)?'shipBlue ':'')+(myIncoming.includes(i)?'shotRed ':'')+(myFleet.includes(i)&&myIncoming.includes(i)?'hitCell':'');a.disabled=true;my.appendChild(a);
-    const e=document.createElement('button');const hit=myShots.includes(i)&&oppFleet.includes(i);e.className='battleCell '+(myShots.includes(i)?'shotBlue ':'')+(hit?'hitCell':'');e.disabled=!!room.winner||room.turn!==side||myShots.includes(i);e.onclick=()=>battleShot(i);enemy.appendChild(e);
+    const own=document.createElement('button');
+    own.type='button';
+    const shipClass=warshipSegmentClass(myFleet,i);
+    own.className='battleCell '+
+      (shipClass?shipClass+' ':'')+
+      (myIncoming.includes(i)?'shotRed ':'')+
+      (myFleet.includes(i)&&myIncoming.includes(i)?'hitCell':'');
+    own.disabled=true;
+    my.appendChild(own);
+
+    const target=document.createElement('button');
+    target.type='button';
+    const alreadyShot=myShots.includes(i);
+    const hit=alreadyShot&&oppFleet.includes(i);
+    target.className='battleCell enemyCell '+
+      (alreadyShot?'shotBlue ':'')+
+      (hit?'hitCell':'');
+    target.setAttribute('aria-label',alreadyShot?'Posição já atacada':'Atacar posição '+(i+1));
+
+    // Define explicitamente o estado clicável em vez de depender de herança/re-render.
+    const canShoot=!room.winner && room.turn===side && !alreadyShot;
+    target.disabled=!canShoot;
+
+    if(canShoot){
+      target.addEventListener('click',ev=>{
+        ev.preventDefault();
+        ev.stopPropagation();
+        battleShot(i);
+      },{once:true});
+      target.addEventListener('touchend',ev=>{
+        ev.preventDefault();
+        ev.stopPropagation();
+        battleShot(i);
+      },{once:true});
+    }
+    enemy.appendChild(target);
   }
 }
 async function battleShot(i){
+  if(!roomId||!room)return;
   await runTransaction(ref(db,'rooms/'+roomId),r=>{
-    const s=r&&sideOf(r),o=otherSide(s);if(!r||r.winner||r.turn!==s)return r;
-    const shots=[...(r.shots?.[s]||[])];if(shots.includes(i))return r;shots.push(i);r.shots[s]=shots;
-    const fleet=r.ships?.[o]||[];if(fleet.every(x=>shots.includes(x)))awardWinner(r,s);else r.turn=o;r.updatedAt=Date.now();return r;
+    if(!r||r.winner)return r;
+    const s=sideOf(r);
+    if(!s||r.turn!==s)return r;
+
+    r.shots=r.shots||{blue:[],red:[]};
+    const shots=Array.isArray(r.shots[s])?[...r.shots[s]]:[];
+    if(shots.includes(i))return r;
+
+    shots.push(i);
+    r.shots[s]=shots;
+
+    const o=otherSide(s);
+    const fleet=Array.isArray(r.ships?.[o])?r.ships[o]:[];
+    if(fleet.length&&fleet.every(x=>shots.includes(x)))awardWinner(r,s);
+    else r.turn=o;
+
+    r.updatedAt=Date.now();
+    return r;
   });
 }
 function battleBotShot(r){
@@ -377,26 +460,117 @@ function chessGameResult(board,turn){
 }
 function renderChess(){
   const side=sideOf(room),b=room.board||initialChessBoard();
-  $('#status').textContent=room.winner?winnerText():room.turn===side?'Sua vez — selecione uma peça':'Vez do adversário';
-  $('#extraGameArea').innerHTML='';const el=$('#board');el.className='board chess';el.innerHTML='';
+  $('#status').textContent=room.winner
+    ? winnerText()
+    : room.turn===side
+      ? (chessSelected===null?'Sua vez — selecione uma peça':'Escolha uma das posições destacadas')
+      : 'Vez do adversário';
+
+  $('#extraGameArea').innerHTML='';
+  const el=$('#board');
+  el.className='board chess';
+  el.innerHTML='';
+
+  const legal=chessSelected===null?[]:legalChessMoves(b,chessSelected);
+
   for(let i=0;i<64;i++){
-    const p=b[i],bt=document.createElement('button');const [r,c]=rc(i);
-    bt.className='chessCell '+(((r+c)%2)?'dark ':'')+(chessColor(p)==='blue'?'chessBlue ':chessColor(p)==='red'?'chessRed ':'')+(chessSelected===i?'selectedSquare':'');
-    bt.textContent=PIECE_GLYPH[p]||'';bt.disabled=!!room.winner||room.turn!==side;bt.onclick=()=>chessClick(i);el.appendChild(bt);
+    const piece=b[i],bt=document.createElement('button'),[r,c]=rc(i);
+    const isLegal=legal.includes(i);
+    const isCapture=isLegal && !!piece && chessColor(piece)!==side;
+
+    bt.type='button';
+    bt.dataset.square=String(i);
+    bt.className=
+      'chessCell '+
+      (((r+c)%2)?'dark ':'')+
+      (chessColor(piece)==='blue'?'chessBlue ':chessColor(piece)==='red'?'chessRed ':'')+
+      (chessSelected===i?'selectedSquare ':'')+
+      (isLegal&&!isCapture?'legalTarget ':'')+
+      (isCapture?'legalCapture ':'');
+    bt.textContent=PIECE_GLYPH[piece]||'';
+    bt.disabled=!!room.winner||room.turn!==side;
+    bt.onclick=()=>chessClick(i);
+    el.appendChild(bt);
   }
 }
+async function animateChessPiece(from,to,piece){
+  const boardEl=$('#board');
+  const fromEl=boardEl?.querySelector(`[data-square="${from}"]`);
+  const toEl=boardEl?.querySelector(`[data-square="${to}"]`);
+  if(!fromEl||!toEl||!piece)return;
+
+  const a=fromEl.getBoundingClientRect(),b=toEl.getBoundingClientRect();
+  const flyer=document.createElement('div');
+  flyer.className='chessFlyingPiece '+(chessColor(piece)==='blue'?'blue':'red');
+  flyer.textContent=PIECE_GLYPH[piece]||'';
+  flyer.style.left=a.left+'px';
+  flyer.style.top=a.top+'px';
+  flyer.style.width=a.width+'px';
+  flyer.style.height=a.height+'px';
+
+  // Esconde visualmente a peça original durante o deslocamento.
+  const oldColor=fromEl.style.color;
+  fromEl.style.color='transparent';
+
+  document.body.appendChild(flyer);
+  await new Promise(requestAnimationFrame);
+  flyer.style.transform=`translate(${b.left-a.left}px,${b.top-a.top}px)`;
+  await new Promise(resolve=>setTimeout(resolve,360));
+  flyer.remove();
+  fromEl.style.color=oldColor;
+}
+
 async function chessClick(i){
-  const side=sideOf(room),b=room.board;if(room.turn!==side)return;
+  const side=sideOf(room),b=room.board;
+  if(room.turn!==side)return;
+
   if(chessSelected===null){
-    if(chessColor(b[i])===side){chessSelected=i;renderChess()}
+    if(chessColor(b[i])===side){
+      chessSelected=i;
+      renderChess();
+    }
     return;
   }
-  const from=chessSelected,moves=legalChessMoves(b,from);chessSelected=null;
-  if(!moves.includes(i)){if(chessColor(b[i])===side){chessSelected=i;renderChess()}else renderChess();return}
+
+  const from=chessSelected;
+  const moves=legalChessMoves(b,from);
+
+  if(!moves.includes(i)){
+    if(chessColor(b[i])===side){
+      chessSelected=i;
+      renderChess();
+    }else{
+      chessSelected=null;
+      renderChess();
+    }
+    return;
+  }
+
+  const movingPiece=b[from];
+  chessSelected=null;
+
+  // Primeiro anima localmente, depois confirma a jogada compartilhada no Firebase.
+  await animateChessPiece(from,i,movingPiece);
+
   await runTransaction(ref(db,'rooms/'+roomId),r=>{
-    const s=r&&sideOf(r);if(!r||r.winner||r.turn!==s)return r;const legal=legalChessMoves(r.board,from);if(!legal.includes(i))return r;
-    const p=r.board[from];r.board[i]=p;r.board[from]='';if(p==='bP'&&Math.floor(i/8)===0)r.board[i]='bQ';if(p==='rP'&&Math.floor(i/8)===7)r.board[i]='rQ';
-    r.turn=otherSide(s);const result=chessGameResult(r.board,r.turn);if(result)awardWinner(r,result);r.updatedAt=Date.now();return r;
+    const s=r&&sideOf(r);
+    if(!r||r.winner||r.turn!==s)return r;
+
+    const legal=legalChessMoves(r.board,from);
+    if(!legal.includes(i))return r;
+
+    const p=r.board[from];
+    r.board[i]=p;
+    r.board[from]='';
+
+    if(p==='bP'&&Math.floor(i/8)===0)r.board[i]='bQ';
+    if(p==='rP'&&Math.floor(i/8)===7)r.board[i]='rQ';
+
+    r.turn=otherSide(s);
+    const result=chessGameResult(r.board,r.turn);
+    if(result)awardWinner(r,result);
+    r.updatedAt=Date.now();
+    return r;
   });
 }
 function chessBotMove(r){
@@ -441,22 +615,83 @@ function cardHtml(c,hidden=false){
   if(hidden)return'<div class="playingCard back">◆</div>';const red=c.includes('♥')||c.includes('♦');return`<div class="playingCard ${red?'redSuit':''}">${c}</div>`;
 }
 function renderPoker(){
-  $('#playersArea').classList.add('hidden');$('#board').className='board';$('#board').innerHTML='';
-  const side=sideOf(room),seats=Object.keys(room.players||{}),extra=$('#extraGameArea');let seatsHtml='<div class="pokerSeats">';
-  for(const s of seats){
-    const p=room.players[s],you=p.uid===uid&&p.sessionId===sessionId;
-    seatsHtml+=`<div class="pokerSeat ${you?'you':'opponent'}"><strong>${p.nick}</strong><small>${you?'Você':p.type==='bot'?'Jogador virtual':'Jogador online'}</small><div class="scoreNumber">${Number(room.score?.[s]||0)}</div><div class="chips">Fichas fictícias: ${Number(room.chips?.[s]||0)}</div></div>`;
-  }seatsHtml+='</div>';
+  $('#playersArea').classList.add('hidden');
+  $('#board').className='board';
+  $('#board').innerHTML='';
+
+  const side=sideOf(room);
+  const seats=Object.keys(room.players||{});
+  const extra=$('#extraGameArea');
+
+  // Ordena a mesa para manter o usuário sempre na posição inferior.
+  const others=seats.filter(s=>s!==side);
+  const positions=[
+    {seat:others[0],pos:'top'},
+    {seat:others[1],pos:'left'},
+    {seat:others[2],pos:'right'},
+    {seat:side,pos:'bottom'}
+  ].filter(x=>x.seat);
+
   const visibleCount=room.stage===0?0:room.stage===1?3:room.stage===2?4:5;
   const community=(room.community||[]).map((c,i)=>cardHtml(c,i>=visibleCount)).join('');
-  const myHole=(room.holes?.[side]||[]).map(c=>cardHtml(c)).join('');
+
+  let seatHtml='';
+  for(const {seat,pos} of positions){
+    const p=room.players[seat];
+    const you=p.uid===uid&&p.sessionId===sessionId;
+    const hole=room.holes?.[seat]||[];
+    const holeHtml=you
+      ? hole.map(c=>{
+          const red=c.includes('♥')||c.includes('♦');
+          return `<span class="miniCard face ${red?'redSuit':''}">${c}</span>`;
+        }).join('')
+      : '<span class="miniCard">◆</span><span class="miniCard">◆</span>';
+
+    seatHtml+=`
+      <div class="pokerSeatPos ${pos} ${you?'you':''}">
+        <strong>${p.nick}</strong>
+        <small>${you?'Você':p.type==='bot'?'Jogador virtual':'Jogador online'}</small>
+        <div class="scoreNumber">${Number(room.score?.[seat]||0)}</div>
+        <div class="chips">Fichas fictícias: ${Number(room.chips?.[seat]||0)}</div>
+        <div class="pokerSeatCards">${holeHtml}</div>
+      </div>`;
+  }
+
   let result='';
   if(room.winner){
-    const win=room.winnerSeats||[];result=win.includes(side)?'Você venceu a mão!':room.winner==='draw'&&win.includes(side)?'Empate':'Mão encerrada.';
+    const win=room.winnerSeats||[];
+    result=win.includes(side)?'Você venceu a mão!':'Mão encerrada.';
   }
-  extra.innerHTML=seatsHtml+`<div class="pokerTable"><strong>Texas Hold’em • play money</strong><div class="cards">${community}</div><div>Suas cartas</div><div class="cards">${myHole}</div><div>Pot fictício: ${Number(room.pot||0)}</div><div class="playMoneyNote">Sem dinheiro real, depósitos, retiradas, prêmios ou conversão de fichas.</div><div class="pokerControls"><button id="pokerNext">${room.stage===0?'Revelar flop':room.stage===1?'Revelar turn':room.stage===2?'Revelar river':room.stage===3?'Resultado':'Mão encerrada'}</button></div></div>`;
+
+  const actionLabel=room.stage===0?'Revelar flop':
+                    room.stage===1?'Revelar turn':
+                    room.stage===2?'Revelar river':
+                    room.stage===3?'Resultado':'Mão encerrada';
+
+  extra.innerHTML=`
+    <div class="pokerArena">
+      ${seatHtml}
+      <div class="pokerOval">
+        <div class="pokerCenter">
+          <strong>Texas Hold’em • play money</strong>
+          <div class="cards">${community}</div>
+          <div>Pot fictício: ${Number(room.pot||0)}</div>
+          <div class="playMoneyNote">Sem dinheiro real, depósitos, retiradas, prêmios ou conversão de fichas.</div>
+          <div class="pokerActionsBelow">
+            <button id="pokerNext">${actionLabel}</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
   $('#status').textContent=room.winner?result:'Mesa recreativa em andamento';
-  const next=$('#pokerNext');if(next){next.disabled=!!room.winner;next.onclick=pokerNextStage}
+
+  const next=$('#pokerNext');
+  if(next){
+    next.disabled=!!room.winner;
+    next.onclick=pokerNextStage;
+  }
+
   if(room.winner)renderPokerEnd();
   else $('#endModal').classList.add('hidden');
 }

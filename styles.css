@@ -53,3 +53,234 @@ button.secondary{background:#fff;color:#185b91;border:1px solid #aac1d4}button:d
   .topbar{padding:12px 14px}.wrap{margin:12px auto;padding:0 8px}.card{padding:16px}.games{grid-template-columns:1fr}.pokerGame{grid-column:auto}.row{flex-direction:column}
   .battleWrap{grid-template-columns:1fr}.pokerSeats{grid-template-columns:1fr 1fr}.playingCard{width:44px;height:62px}
 }
+
+/* =========================
+   v0.14 — Poker: mesa com 4 posições
+   ========================= */
+.pokerArena{
+  position:relative;
+  width:min(760px,100%);
+  min-height:520px;
+  margin:12px auto 0;
+}
+.pokerOval{
+  position:absolute;
+  left:12%;
+  right:12%;
+  top:14%;
+  bottom:14%;
+  background:radial-gradient(circle at 50% 45%,#2f7a59 0%,#245e46 62%,#184a35 100%);
+  border:10px solid #6d4c41;
+  border-radius:48%;
+  box-shadow:inset 0 0 0 3px rgba(255,255,255,.15),0 14px 28px rgba(0,0,0,.18);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:#fff;
+}
+.pokerCenter{
+  width:70%;
+  text-align:center;
+}
+.pokerCenter .cards{margin:8px 0}
+.pokerSeatPos{
+  position:absolute;
+  width:min(220px,36%);
+  background:#fff;
+  border:3px solid #d32f2f;
+  border-radius:14px;
+  padding:10px;
+  text-align:center;
+  box-shadow:0 8px 22px rgba(0,0,0,.16);
+  z-index:2;
+}
+.pokerSeatPos.you{border-color:#1565c0}
+.pokerSeatPos.top{top:0;left:50%;transform:translateX(-50%)}
+.pokerSeatPos.bottom{bottom:0;left:50%;transform:translateX(-50%)}
+.pokerSeatPos.left{left:0;top:50%;transform:translateY(-50%)}
+.pokerSeatPos.right{right:0;top:50%;transform:translateY(-50%)}
+.pokerSeatPos strong{display:block}
+.pokerSeatPos small{display:block;color:#607d8b;margin-top:2px}
+.pokerSeatCards{display:flex;justify-content:center;gap:4px;margin-top:6px}
+.miniCard{
+  width:30px;height:42px;border-radius:5px;background:#12385c;color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;
+  border:1px solid rgba(255,255,255,.55)
+}
+.miniCard.face{background:#fff;color:#17212b;border-color:#cfd8dc}
+.miniCard.face.redSuit{color:#c62828}
+.pokerSeatPos .scoreNumber{font-size:20px;margin-top:4px}
+.pokerSeatPos .chips{font-size:11px}
+.pokerActionsBelow{margin-top:8px;display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
+
+/* =========================
+   v0.14 — Batalha Naval
+   ========================= */
+.battleCell.enemyCell{
+  cursor:pointer;
+  pointer-events:auto;
+  touch-action:manipulation;
+}
+.battleCell.enemyCell:not(:disabled):hover{
+  outline:3px solid #d32f2f;
+  outline-offset:-3px;
+  background:#fff3f3;
+}
+.battleCell.enemyCell:not(:disabled){
+  opacity:1;
+}
+
+/* =========================
+   v0.14 — Xadrez: destinos + animação
+   ========================= */
+.chessCell{
+  position:relative;
+  overflow:visible;
+  transition:box-shadow .15s ease,transform .12s ease;
+}
+.chessCell.legalTarget::after{
+  content:"";
+  position:absolute;
+  width:22%;
+  aspect-ratio:1;
+  border-radius:50%;
+  background:rgba(25,118,210,.68);
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  pointer-events:none;
+}
+.chessCell.legalCapture{
+  box-shadow:inset 0 0 0 5px rgba(211,47,47,.72);
+}
+.chessCell.selectedSquare{
+  outline:4px solid #ffb300;
+  outline-offset:-4px;
+  z-index:1;
+}
+.chessFlyingPiece{
+  position:fixed;
+  z-index:9999;
+  pointer-events:none;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:clamp(28px,6vw,48px);
+  font-weight:700;
+  transition:transform .34s cubic-bezier(.2,.75,.25,1);
+  will-change:transform;
+  text-shadow:0 2px 4px rgba(0,0,0,.18);
+}
+.chessFlyingPiece.blue{color:#1565c0}
+.chessFlyingPiece.red{color:#d32f2f}
+
+@media(max-width:620px){
+  .pokerArena{min-height:570px}
+  .pokerSeatPos{width:44%;padding:8px}
+  .pokerSeatPos.left{left:0;top:43%}
+  .pokerSeatPos.right{right:0;top:43%}
+  .pokerOval{left:9%;right:9%;top:17%;bottom:17%}
+  .pokerCenter{width:72%}
+}
+
+
+/* =========================
+   v0.15 — Batalha Naval: navios de guerra 3D
+   ========================= */
+.battlePanel{
+  perspective:900px;
+}
+.battleGrid{
+  position:relative;
+  padding:7px;
+  border-radius:12px;
+  background:
+    linear-gradient(rgba(255,255,255,.10) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.10) 1px,transparent 1px),
+    linear-gradient(145deg,#0d74a5,#07527c);
+  background-size:12.5% 12.5%,12.5% 12.5%,100% 100%;
+  box-shadow:inset 0 0 24px rgba(0,0,0,.28),0 8px 18px rgba(0,0,0,.12);
+  transform:rotateX(2deg);
+  transform-origin:center;
+}
+.battleCell{
+  position:relative;
+  overflow:visible;
+  background:rgba(213,241,255,.42);
+  border-color:rgba(255,255,255,.42);
+  min-width:0;
+}
+.warship3d{
+  background:transparent!important;
+  border-color:rgba(255,255,255,.36)!important;
+}
+.warship3d::before{
+  content:"";
+  position:absolute;
+  z-index:3;
+  left:14%;
+  right:14%;
+  top:30%;
+  bottom:24%;
+  border-radius:48% 48% 32% 32% / 62% 62% 38% 38%;
+  background:linear-gradient(90deg,#263238 0%,#78909c 22%,#cfd8dc 47%,#607d8b 68%,#263238 100%);
+  box-shadow:
+    0 5px 3px rgba(0,0,0,.38),
+    inset 0 3px 2px rgba(255,255,255,.48),
+    inset 0 -4px 3px rgba(0,0,0,.30);
+  transform:perspective(80px) rotateX(18deg);
+}
+.warship3d::after{
+  content:"";
+  position:absolute;
+  z-index:4;
+  width:34%;
+  height:30%;
+  left:33%;
+  top:17%;
+  border-radius:3px 3px 1px 1px;
+  background:linear-gradient(90deg,#37474f,#b0bec5 48%,#455a64);
+  box-shadow:
+    0 3px 2px rgba(0,0,0,.35),
+    8px 4px 0 -5px #263238,
+    -8px 4px 0 -5px #263238;
+  transform:perspective(60px) rotateX(10deg);
+}
+.warshipBow::before{
+  clip-path:polygon(50% 0,92% 30%,82% 100%,18% 100%,8% 30%);
+}
+.warshipMid::before{
+  border-radius:20%;
+}
+.warshipStern::before{
+  clip-path:polygon(15% 0,85% 0,96% 75%,72% 100%,28% 100%,4% 75%);
+}
+.battleCell.hitCell.warship3d{
+  animation:shipHit .45s ease-out;
+}
+.battleCell.hitCell.warship3d::after{
+  background:radial-gradient(circle,#fff59d 0 12%,#ff9800 20% 40%,#d32f2f 48% 62%,rgba(38,50,56,.9) 65% 78%,transparent 80%);
+  width:70%;
+  height:70%;
+  left:15%;
+  top:8%;
+  border-radius:50%;
+  box-shadow:none;
+  transform:none;
+}
+@keyframes shipHit{
+  0%{transform:translate(0,0) rotate(0)}
+  30%{transform:translate(-2px,1px) rotate(-2deg)}
+  60%{transform:translate(2px,-1px) rotate(2deg)}
+  100%{transform:translate(0,0) rotate(0)}
+}
+.battleLegend{
+  margin:8px 0 0;
+  font-size:11px;
+  color:#607d8b;
+  text-align:center;
+}
+@media(max-width:620px){
+  .battleGrid{padding:4px;gap:2px}
+  .warship3d::after{width:38%;left:31%}
+}
