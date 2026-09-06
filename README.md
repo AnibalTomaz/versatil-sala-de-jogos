@@ -1,36 +1,30 @@
-# PROTÓTIPO SALA DE JOGOS VERSÁTIL v0.17
+# PROTÓTIPO SALA DE JOGOS VERSÁTIL v0.18
 
-## Poker — replay e apostas fictícias
+Correções desta versão:
 
-Foi corrigido o fluxo de `Jogar de novo` depois de vencer uma mão.
+1. Batalha Naval
+- removida a espera artificial do jogador virtual na Batalha Naval;
+- nenhum cronômetro ou limite de tempo;
+- tiro do bot escolhe sempre uma casa ainda não atacada;
+- proteção contra repetição/posição inválida que poderia interromper a sequência;
+- 5 embarcações de uma casa continuam mantidas.
 
-O pot não é editado diretamente, porque no poker ele é consequência das apostas. Em vez disso, agora o jogador pode:
-- `Mesa / Check`, quando não há valor a pagar;
-- `Pagar para ver`, quando existe uma aposta atual;
-- `Aumentar`, escolhendo um valor;
-- `All in`, usando todas as fichas fictícias disponíveis;
-- `Desistir`.
+2. Poker — data de nascimento
+- entrada no formato DD/MM/AAAA;
+- aceita no máximo 8 algarismos;
+- ano fica obrigatoriamente limitado a quatro dígitos;
+- validação de data real e de 18 anos completos permanece local.
 
-Todas as fichas continuam sendo exclusivamente fictícias (`play money`), sem valor real, prêmio, depósito ou retirada.
+3. Poker — mesa e ações
+- mesa reorganizada para não sobrepor controles;
+- as quatro posições continuam visíveis;
+- controles de aposta foram retirados do centro da mesa e colocados abaixo dela;
+- botão de progressão da mão fica separado, grande e visível: ABRIR FLOP, ABRIR TURN, ABRIR RIVER e MOSTRAR RESULTADO;
+- pot e cartas comunitárias permanecem no centro.
 
-Ao iniciar uma nova mão:
-- as cartas são redistribuídas;
-- o placar permanece;
-- as fichas fictícias remanescentes permanecem;
-- blinds fictícios de 10 fichas são recolocados;
-- quem ficar com menos de 10 fichas recebe nova carga fictícia de 1000 para manter a simulação recreativa.
-
-## Batalha Naval — frota nova
-
-Cada jogador agora possui exatamente 5 embarcações, todas ocupando somente 1 casa:
-- 2 caravelas;
-- 2 submarinos;
-- 1 caiaque.
-
-Cada embarcação aparece sobre uma única casa do próprio tabuleiro.
-Ao atacar:
-- água = gota azul;
-- embarcação atingida = a casa/embarcação fica vermelha;
-- vence quem atingir as 5 embarcações do adversário.
-
-Os demais jogos e o aviso +18 do Poker foram preservados.
+4. Celular
+- layout específico para telas até 620 px e refinamento até 390 px;
+- assentos, cartas e mesa reduzem proporcionalmente;
+- ações viram grade de duas colunas;
+- botão da etapa permanece em largura total;
+- Batalha Naval mantém toque direto.

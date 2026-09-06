@@ -419,7 +419,11 @@ async function battleShot(i){
   });
 }
 function battleBotShot(r){
-  const used=r.shots?.red||[];const free=Array.from({length:64},(_,i)=>i).filter(i=>!used.includes(i));return free[Math.floor(Math.random()*free.length)];
+  const used=new Set(Array.isArray(r.shots?.red)?r.shots.red:[]);
+  const available=[];
+  for(let i=0;i<64;i++)if(!used.has(i))available.push(i);
+  if(!available.length)return null;
+  return available[Math.floor(Math.random()*available.length)];
 }
 
 /* XADREZ */
@@ -713,10 +717,10 @@ function renderPoker(){
     result=win.includes(side)?'Você venceu a mão!':'Mão encerrada.';
   }
 
-  const actionLabel=room.stage===0?'Revelar flop':
-                    room.stage===1?'Revelar turn':
-                    room.stage===2?'Revelar river':
-                    room.stage===3?'Resultado':'Mão encerrada';
+  const actionLabel=room.stage===0?'ABRIR FLOP':
+                    room.stage===1?'ABRIR TURN':
+                    room.stage===2?'ABRIR RIVER':
+                    room.stage===3?'MOSTRAR RESULTADO':'Mão encerrada';
 
   const myContribution=Number(room.contributions?.[side]||0);
   const currentBet=Number(room.currentBet||0);
@@ -732,29 +736,31 @@ function renderPoker(){
         <div class="pokerCenter">
           <strong>Texas Hold’em • play money</strong>
           <div class="cards">${community}</div>
-          <div>Pot fictício: ${Number(room.pot||0)}</div>
-          <div class="playMoneyNote">Sem dinheiro real, depósitos, retiradas, prêmios ou conversão de fichas.</div>
-
-          <div class="pokerBetPanel">
-            <div class="pokerBetInfo">
-              <span>Aposta atual: ${currentBet}</span>
-              <span>Para pagar: ${toCall}</span>
-              <span>Suas fichas: ${myChips}</span>
-            </div>
-            <div class="pokerBetControls">
-              <button id="pokerCheckCall">${toCall>0?'Pagar para ver':'Mesa / Check'}</button>
-              <input id="pokerRaiseValue" type="number" min="${minRaise}" step="10" value="${minRaise}" aria-label="Valor do aumento">
-              <button id="pokerRaise">Aumentar</button>
-              <button id="pokerAllIn">All in</button>
-              <button id="pokerFold" class="secondary">Desistir</button>
-            </div>
-            <div class="pokerActionMsg">${room.lastAction||''}</div>
-          </div>
-
-          <div class="pokerActionsBelow">
-            <button id="pokerNext">${actionLabel}</button>
-          </div>
+          <div class="pokerPot">Pot fictício: <b>${Number(room.pot||0)}</b></div>
         </div>
+      </div>
+    </div>
+
+    <div class="pokerGameControls">
+      <button id="pokerNext" class="pokerStageBtn">${actionLabel}</button>
+
+      <div class="pokerBetPanel">
+        <div class="pokerBetInfo">
+          <span>Aposta atual: <b>${currentBet}</b></span>
+          <span>Para pagar: <b>${toCall}</b></span>
+          <span>Suas fichas: <b>${myChips}</b></span>
+        </div>
+        <div class="pokerBetControls">
+          <button id="pokerCheckCall">${toCall>0?'Pagar para ver':'Mesa / Check'}</button>
+          <div class="raiseGroup">
+            <input id="pokerRaiseValue" type="number" min="${minRaise}" step="10" value="${minRaise}" aria-label="Valor do aumento">
+            <button id="pokerRaise">Aumentar</button>
+          </div>
+          <button id="pokerAllIn">All in</button>
+          <button id="pokerFold" class="secondary">Desistir</button>
+        </div>
+        <div class="pokerActionMsg">${room.lastAction||''}</div>
+        <div class="playMoneyNote">Somente fichas fictícias • sem dinheiro real, depósitos, retiradas ou prêmios.</div>
       </div>
     </div>`;
 
@@ -880,19 +886,21 @@ let botBusy=false;
 async function maybeBotMove(){
   if(botBusy||!room||room.winner||gameKey==='poker')return;
   const red=room.players?.red;if(red?.type!=='bot'||room.turn!=='red')return;
-  botBusy=true;setTimeout(async()=>{
+  botBusy=true;
+  const botDelay=gameKey==='battleship'?0:800;
+  setTimeout(async()=>{
     try{
       if(gameKey==='tictactoe'){
         await runTransaction(ref(db,'rooms/'+roomId),r=>{if(!r||r.winner||r.turn!=='red')return r;const i=tttBotPick(r.board);if(i==null)return r;r.board[i]='red';const w=tttWin(r.board);if(w)awardWinner(r,w);else r.turn='blue';return r});
       }else if(gameKey==='connect4'){
         await runTransaction(ref(db,'rooms/'+roomId),r=>{if(!r||r.winner||r.turn!=='red')return r;const c=c4BotColumn(r.board);const b=[...r.board];c4Drop(b,c,'red');r.board=b;const w=c4Winner(b);if(w)awardWinner(r,w);else r.turn='blue';return r});
       }else if(gameKey==='battleship'){
-        await runTransaction(ref(db,'rooms/'+roomId),r=>{if(!r||r.winner||r.turn!=='red')return r;const i=battleBotShot(r),shots=[...(r.shots.red||[])];shots.push(i);r.shots.red=shots;if((r.ships.blue||[]).every(x=>shots.includes(x)))awardWinner(r,'red');else r.turn='blue';return r});
+        await runTransaction(ref(db,'rooms/'+roomId),r=>{if(!r||r.winner||r.turn!=='red')return r;const i=battleBotShot(r);if(i===null){r.turn='blue';return r}const shots=[...(r.shots.red||[])];if(!shots.includes(i))shots.push(i);r.shots.red=shots;if((r.ships.blue||[]).every(x=>shots.includes(x)))awardWinner(r,'red');else r.turn='blue';r.updatedAt=Date.now();return r});
       }else if(gameKey==='chess'){
         await runTransaction(ref(db,'rooms/'+roomId),r=>{if(!r||r.winner||r.turn!=='red')return r;const mv=chessBotMove(r);if(!mv){const res=chessGameResult(r.board,'red');if(res)awardWinner(r,res);return r}const[from,to]=mv,p=r.board[from];r.board[to]=p;r.board[from]='';if(p==='rP'&&Math.floor(to/8)===7)r.board[to]='rQ';r.turn='blue';const res=chessGameResult(r.board,'blue');if(res)awardWinner(r,res);return r});
       }
     }finally{botBusy=false}
-  },800);
+  },botDelay);
 }
 
 /* REVANCHE */
@@ -974,9 +982,20 @@ async function back(){
 }
 
 /* +18 POKER */
+function parseBirthDate(value){
+  const m=String(value||'').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if(!m)return null;
+  const d=Number(m[1]),mo=Number(m[2]),y=Number(m[3]);
+  if(y<1900||y>new Date().getFullYear())return null;
+  const dt=new Date(y,mo-1,d,12,0,0);
+  if(dt.getFullYear()!==y||dt.getMonth()!==mo-1||dt.getDate()!==d)return null;
+  return dt;
+}
 function age18OrMore(dateString){
-  if(!dateString)return false;const dob=new Date(dateString+'T12:00:00'),today=new Date();if(Number.isNaN(dob.getTime())||dob>today)return false;
-  let age=today.getFullYear()-dob.getFullYear(),m=today.getMonth()-dob.getMonth();if(m<0||(m===0&&today.getDate()<dob.getDate()))age--;
+  const dob=parseBirthDate(dateString),today=new Date();
+  if(!dob||dob>today)return false;
+  let age=today.getFullYear()-dob.getFullYear(),m=today.getMonth()-dob.getMonth();
+  if(m<0||(m===0&&today.getDate()<dob.getDate()))age--;
   return age>=18;
 }
 function openPokerGate(){
@@ -992,6 +1011,19 @@ function confirmPokerAccess(){
 }
 
 /* EVENTOS */
+const birthInput=$('#birthDate');
+birthInput.addEventListener('input',()=>{
+  let d=birthInput.value.replace(/\D/g,'').slice(0,8);
+  if(d.length>4)d=d.slice(0,2)+'/'+d.slice(2,4)+'/'+d.slice(4);
+  else if(d.length>2)d=d.slice(0,2)+'/'+d.slice(2);
+  birthInput.value=d;
+});
+birthInput.addEventListener('keydown',e=>{
+  // maxlength + formatter impedem que o ano ultrapasse quatro dígitos.
+  if(/\d/.test(e.key)&&birthInput.value.replace(/\D/g,'').length>=8&&
+     !['Backspace','Delete','ArrowLeft','ArrowRight','Tab'].includes(e.key))e.preventDefault();
+});
+
 $('#playTTT').onclick=()=>startGame('tictactoe');
 $('#playC4').onclick=()=>startGame('connect4');
 $('#playBattle').onclick=()=>startGame('battleship');

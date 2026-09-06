@@ -6,14 +6,14 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Versátil • Sala de Jogos v0.17 Online</title>
-<link rel="stylesheet" href="styles.css?v=0.17">
+<title>Versátil • Sala de Jogos v0.18 Online</title>
+<link rel="stylesheet" href="styles.css?v=0.18">
 </head>
 <body>
 <header class="topbar">
   <div>
     <div class="brand">SERVIÇOS VERSÁTIL</div>
-    <div class="sub">Sala de Jogos • Protótipo online v0.17</div>
+    <div class="sub">Sala de Jogos • Protótipo online v0.18</div>
   </div>
   <div id="connBadge" class="badge">Conectando…</div>
 </header>
@@ -120,7 +120,8 @@
     </label>
 
     <label for="birthDate">Data de nascimento</label>
-    <input id="birthDate" type="date" autocomplete="bday">
+    <input id="birthDate" type="text" inputmode="numeric" maxlength="10"
+           placeholder="DD/MM/AAAA" autocomplete="bday" aria-label="Data de nascimento no formato dia mês ano">
     <div id="ageMsg" class="ageMsg"></div>
 
     <div class="modalActions legalActions">
@@ -130,6 +131,6 @@
   </div>
 </div>
 
-<script type="module" src="app.js?v=0.17"></script>
+<script type="module" src="app.js?v=0.18"></script>
 </body>
 </html>

@@ -507,3 +507,111 @@ button.secondary{background:#fff;color:#185b91;border:1px solid #aac1d4}button:d
   font-size:12px;
   min-height:16px;
 }
+
+
+/* =========================
+   v0.18 — Poker legível + mobile first
+   ========================= */
+.pokerArena{
+  width:min(720px,100%)!important;
+  min-height:470px!important;
+  margin:8px auto 10px!important;
+}
+.pokerOval{
+  left:13%!important;right:13%!important;top:17%!important;bottom:17%!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+}
+.pokerCenter{width:62%!important}
+.pokerCenter .cards{margin:8px auto!important}
+.pokerPot{font-size:15px;margin-top:7px}
+.pokerSeatPos{
+  width:176px!important;
+  max-width:31%!important;
+  padding:7px!important;
+  font-size:12px!important;
+}
+.pokerSeatPos.top{top:0!important}
+.pokerSeatPos.bottom{bottom:0!important}
+.pokerSeatPos.left{left:0!important;top:50%!important}
+.pokerSeatPos.right{right:0!important;top:50%!important}
+.pokerSeatPos .scoreNumber{font-size:17px!important;margin-top:2px!important}
+.pokerSeatPos .chips{font-size:10px!important;margin-top:2px!important}
+.pokerSeatCards{margin-top:4px!important}
+.miniCard{width:26px!important;height:36px!important;font-size:12px!important}
+
+.pokerGameControls{
+  width:min(720px,100%);
+  margin:0 auto;
+  display:flex;
+  flex-direction:column;
+  gap:9px;
+}
+.pokerStageBtn{
+  width:100%;
+  min-height:48px;
+  font-size:16px;
+  background:#0d6b3d;
+  border:2px solid #fff;
+  box-shadow:0 3px 9px rgba(0,0,0,.15);
+}
+.pokerBetPanel{
+  margin:0!important;
+  background:#f5f9fc!important;
+  color:#17324a!important;
+  border:1px solid #cbdde9!important;
+}
+.pokerBetControls{display:grid!important;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px!important}
+.raiseGroup{display:flex;gap:5px;min-width:0}
+.raiseGroup input{width:76px!important;min-width:0!important;flex:1!important;padding:9px 6px!important}
+.raiseGroup button{padding:9px 8px!important}
+.pokerActionMsg{color:#405b70}
+.pokerGameControls .playMoneyNote{color:#607d8b;opacity:1}
+
+/* Data: campo não cresce além do necessário */
+#birthDate{max-width:220px;letter-spacing:.5px}
+
+/* Batalha: nenhuma indicação visual de cronômetro/espera */
+.battleGrid{touch-action:manipulation}
+.battleCell.enemyCell{touch-action:manipulation}
+
+@media(max-width:620px){
+  .pokerArena{
+    min-height:390px!important;
+    width:100%!important;
+    overflow:hidden;
+  }
+  .pokerOval{
+    left:8%!important;right:8%!important;top:18%!important;bottom:18%!important;
+    border-width:6px!important;
+  }
+  .pokerCenter{width:54%!important;font-size:11px}
+  .pokerCenter .playingCard{width:31px!important;height:44px!important;font-size:11px}
+  .pokerSeatPos{
+    width:116px!important;
+    max-width:35%!important;
+    padding:5px!important;
+    border-width:2px!important;
+    border-radius:10px!important;
+    font-size:10px!important;
+  }
+  .pokerSeatPos small{font-size:8px!important}
+  .pokerSeatPos .chips{font-size:8px!important}
+  .pokerSeatPos .scoreNumber{font-size:14px!important}
+  .miniCard{width:21px!important;height:29px!important;font-size:9px!important}
+  .pokerSeatPos.left{top:49%!important}
+  .pokerSeatPos.right{top:49%!important}
+  .pokerBetControls{grid-template-columns:1fr 1fr!important}
+  .pokerBetControls button{min-height:44px;padding:9px 7px}
+  .raiseGroup{grid-column:1/-1}
+  .raiseGroup input{width:45%!important}
+  .raiseGroup button{flex:1}
+  .pokerBetInfo{gap:7px!important;font-size:11px!important}
+  .pokerStageBtn{position:relative;z-index:4;min-height:50px}
+  #birthDate{max-width:100%;width:100%}
+}
+@media(max-width:390px){
+  .pokerArena{min-height:365px!important}
+  .pokerSeatPos{width:102px!important}
+  .pokerOval{left:5%!important;right:5%!important}
+  .pokerCenter{width:48%!important}
+}
