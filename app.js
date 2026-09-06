@@ -38,6 +38,10 @@ function makeNick(n){return 'SHV'+String(n).padStart(3,'0')}
 function randomNickNumber(){return Math.floor(Math.random()*(NICK_MAX-NICK_MIN+1))+NICK_MIN}
 
 async function boot(){
+  const play=$('#playTTT');
+  const nickEl=$('#nick');
+  play.disabled=true;
+  nickEl.value='Gerando…';
   try{
     $('#connBadge').textContent='Autenticando…';
     const c=await signInAnonymously(auth);
@@ -51,10 +55,13 @@ async function boot(){
     await assignFreshAutomaticNick();
 
     $('#connBadge').textContent='Firebase online';
+    play.disabled=false;
   }catch(e){
     console.error(e);
+    nick='';
+    nickEl.value='Indisponível';
+    play.disabled=true;
     $('#connBadge').textContent='Falha na conexão';
-    alert('Falha ao conectar ao Firebase.');
   }
 }
 
@@ -105,6 +112,9 @@ async function reserveAutomaticNick(candidate){
 async function assignFreshAutomaticNick(){
   await releasePreviousNickFromProfile();
 
+  // Nunca repete imediatamente o nick do acesso anterior neste aparelho.
+  const previousLocal=localStorage.getItem('versatil_last_shv_nick')||'';
+
   // Tenta números aleatórios sem expor ao usuário nomes ocupados.
   const tried=new Set();
   for(let attempt=0;attempt<999;attempt++){
@@ -113,7 +123,11 @@ async function assignFreshAutomaticNick(){
     tried.add(n);
 
     const candidate=makeNick(n);
-    if(await reserveAutomaticNick(candidate))return candidate;
+    if(candidate===previousLocal)continue;
+    if(await reserveAutomaticNick(candidate)){
+      localStorage.setItem('versatil_last_shv_nick',candidate);
+      return candidate;
+    }
   }
   throw new Error('Não há nicks SHV disponíveis no momento.');
 }
@@ -440,4 +454,7 @@ $('#leaveGame').onclick=back;
 $('#backBtn').onclick=back;
 $('#rematchBtn').onclick=rematch;
 
+// Os cliques são registrados ANTES de iniciar Firebase/nick.
+// Isso evita uma tela aparentemente clicável sem ação em inicializações lentas.
 boot();
+

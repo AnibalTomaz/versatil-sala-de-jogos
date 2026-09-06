@@ -1,23 +1,16 @@
-# PROTÓTIPO SALA DE JOGOS VERSÁTIL v0.9 — NICK SHV AUTOMÁTICO
+# PROTÓTIPO SALA DE JOGOS VERSÁTIL v0.10
 
-Alteração solicitada:
+Correção do sintoma observado no PC na v0.9: versão visual atualizada, porém o botão do Jogo da Velha não respondia.
 
-- o usuário não pode mais escrever ou editar o próprio nick;
-- não existe botão para escolher/alterar nick;
-- o sistema gera automaticamente um nick no formato `SHV001`;
-- `SHV` é sempre fixo;
-- somente os três números finais são randômicos (`001` a `999`);
-- a cada novo acesso/carregamento é atribuído um novo nick;
-- nicks já reservados por outro usuário são simplesmente ignorados e nunca são apresentados como opção;
-- não há mensagem dizendo que determinado nick já está em uso;
-- a reserva é feita atomicamente no Firebase para impedir duplicidade simultânea;
-- a reserva é removida na desconexão.
+Mudanças:
+- os eventos dos botões são registrados antes da inicialização assíncrona do Firebase;
+- o botão Jogo da Velha começa desabilitado enquanto o nick está sendo criado;
+- o campo mostra `Gerando…`;
+- somente após `Firebase online` + nick SHV válido o botão é habilitado;
+- se a inicialização falhar, o botão permanece desabilitado e o campo mostra `Indisponível`;
+- `app.js?v=0.10` força o navegador a buscar o JavaScript desta versão e reduz problema de cache entre HTML novo e JS antigo;
+- nick continua automático, não editável, no formato SHV001–SHV999;
+- o nick do acesso imediatamente anterior no mesmo aparelho não é repetido;
+- nicks ocupados continuam sendo silenciosamente ignorados.
 
-Exemplo:
-`SHV037`
-`SHV412`
-`SHV908`
-
-O pareamento humano e o fallback para jogador virtual da v0.8 foram preservados.
-
-Não contém `data.json` e não altera o APP Versátil oficial.
+O pareamento humano da v0.8/v0.9 foi preservado para novo teste depois desta correção de inicialização.
